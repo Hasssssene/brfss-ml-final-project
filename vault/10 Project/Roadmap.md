@@ -13,12 +13,12 @@ Deadline: **2026-11-08 23:59 (C2)**. Statuses: ☐ todo · ◐ in progress · �
 - ✅ Column triage note: keep/drop per column with reasons (mode-only vars, module vars, leakage) — EXP-000 evidence + open-question resolutions recorded; per-column verdict table finalized during P2 whitelist build
 - ✅ Correlation screen: features vs target, duplicate-pair confirmation (e.g. _BMI5 vs HEIGHT3/WEIGHT2) (top assoc DIFFWALK ρ=−0.413; dups confirmed: EXERANY2≡_TOTINDA, _DRDXAR3≡HAVARTH5)
 
-## P2 — Cleaning & feature matrix v1 ◐
-- ◐ Recode sentinels → NaN (per-codebook dictionary); ordinal vs nominal encoding plan *(started: EXP-000 sentinel census + ADR-004 rules — 88→0 day-count recode, POORHLTH sentinel→NaN + imputation, hard exclusions GENHLTH/_RFHLTH/_PHYS14D/_MENT14D)*
-- ☐ BMI from _BMI5; day-count vars (88→0); imputation strategy (fold-safe)
-- ☐ Checkpoint cleaned matrix → `data/interim/` (parquet)
+## P2 — Cleaning & feature matrix v1 ✅
+- ✅ Recode sentinels → NaN (per-codebook dictionary); ordinal vs nominal encoding plan *(done via per-column **value contracts** in `src/preprocessing.py` — codebook-exact sentinel sets, never pattern matching; ORD ×4 / NUM ×3 / ENG ×15 / NOM ×54 per [[ADR-005 whitelist and matrix v1]])*
+- ✅ BMI from _BMI5; day-count vars (88→0); imputation strategy (fold-safe) *(BMI ÷100 + all ENG recodes done; fold-safe imputation design moves to P3 CV pipelines — smoke test used simple median/mode on a 50k subsample)*
+- ✅ Checkpoint cleaned matrix → `data/interim/` (parquet) *(`clean_v1.parquet` 438,693×76 + `target_v1.parquet` + `column_meta.json`; 20.54% overall missingness; smoke train AUC 0.8966 — not an experiment)*
 
-## P3 — EDA + baselines (Basic level complete)
+## P3 — EDA + baselines ◐ (Basic level complete)
 - ☐ EDA figures: target imbalance, missingness map, top associations, correlation heatmap
 - ☐ EXP-001 DummyClassifier ROC-AUC baseline (expect 0.5)
 - ☐ EXP-002 LogisticRegression, EXP-003 DecisionTree (manual tuning, documented)

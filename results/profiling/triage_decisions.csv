@@ -1,0 +1,304 @@
+col_name,verdict,rule,reason,coverage_census_pct,coverage_effective_pct,encoding,recode
+_STATE,KEEP-NOM,R5/R6/R7,"keep per rule 6 (nominal, 53 FIPS codes incl. 9 = Connecticut - census miscounted FIPS 9 as sentinel); selection can prune",98.1,100.0,NOM,"('none',)"
+FMONTH,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),82.32,,,
+IDATE,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+IMONTH,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),83.35,,,
+IDAY,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),92.87,,,
+IYEAR,DROP-CONSTANT,R3,"rule 3: 2 distinct values (2021/2022 fielding spillover), admin",100.0,,,
+DISPCODE,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+SEQNO,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+_PSU,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+CTELENM1,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),26.85,,,
+PVTRESD1,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),26.85,,,
+COLGHOUS,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,0.01,,,
+STATERE1,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,26.85,,,
+CELPHON1,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,26.85,,,
+LADULT1,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),26.85,,,
+COLGSEX,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),0.01,,,
+NUMADULT,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),26.83,,,
+LANDSEX,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),11.36,,,
+NUMMEN,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),14.92,,,
+NUMWOMEN,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),14.92,,,
+RESPSLCT,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),14.74,,,
+SAFETIME,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,73.15,,,
+CTELNUM1,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,73.15,,,
+CELLFON5,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,73.15,,,
+CADULT1,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,73.15,,,
+CELLSEX,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),73.11,,,
+PVTRESD3,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),73.15,,,
+CCLGHOUS,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,0.29,,,
+CSTATE1,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),73.15,,,
+LANDLINE,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),72.89,,,
+HHADULT,DROP-MODE,R2,rule 2: landline/cell intro-flow block (interview-mode artifact),72.37,,,
+SEXVAR,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",100.0,100.0,NOM,"('none',)"
+GENHLTH,DROP-LEAK,R1,"rule 1: THE target source (y = GENHLTH in {4,5}); rho=+0.672 vs y (EXP-000); never a feature",99.74,,,
+PHYSHLTH,ENG,R5/R6/R7,ADR-004 keep (distinct construct; 88->0 mandatory); coverage 96.2% after recode,96.24,97.84,ENG,"('daycnt',)"
+MENTHLTH,ENG,R5/R6/R7,ADR-004 keep (distinct construct; 88->0 mandatory),96.44,98.2,ENG,"('daycnt',)"
+POORHLTH,ENG,R5/R6/R7,ADR-004 keep - sentinel->NaN + imputation; final inclusion decided empirically in P5 selection,50.8,52.0,ENG,"('daycnt',)"
+PRIMINSR,KEEP-NOM,R5/R6/R7,keep per rule 6; sentinels 77/99 only - 7 (TRICARE/VA) and 9 (state plan) are VALID plans; 88 'no coverage' kept as category,90.18,96.03,NOM,"('sent', (77, 99))"
+PERSDOC3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.16,99.16,NOM,"('sent', (7, 9))"
+MEDCOST1,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.69,99.69,NOM,"('sent', (7, 9))"
+CHECKUP1,KEEP-ORD,R5/R6/R7,"rule 5/6 keep as ORDINAL: 1<2<3<4 time buckets, 8 = 'never' kept as its own high value (ADR-005 spec), 7/9 -> NaN",98.65,98.65,ORD,"('sent', (7, 9))"
+EXERANY2,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.79,99.79,NOM,"('sent', (7, 9))"
+BPHIGH6,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.56,99.56,NOM,"('sent', (7, 9))"
+BPMEDS,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",39.13,39.13,NOM,"('sent', (7, 9))"
+CHOLCHK3,KEEP-NOM,R5/R6/R7,"rule 7 judgment: kept as NOMINAL, not ordinal - codebook order is non-monotone (1 = 'Never' vs 2-8 = decreasing recency); one-hot preserves everything",93.21,93.21,NOM,"('sent', (7, 9))"
+TOLDHI3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",85.42,85.42,NOM,"('sent', (7, 9))"
+CHOLMED3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",85.54,85.54,NOM,"('sent', (7, 9))"
+CVDINFR4,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.39,99.39,NOM,"('sent', (7, 9))"
+CVDCRHD4,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.03,99.03,NOM,"('sent', (7, 9))"
+CVDSTRK3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.67,99.67,NOM,"('sent', (7, 9))"
+ASTHMA3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.6,99.6,NOM,"('sent', (7, 9))"
+ASTHNOW,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,13.61,,,
+CHCSCNCR,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.67,99.67,NOM,"('sent', (7, 9))"
+CHCOCNCR,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.69,99.69,NOM,"('sent', (7, 9))"
+CHCCOPD3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.52,99.52,NOM,"('sent', (7, 9))"
+ADDEPEV3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.43,99.43,NOM,"('sent', (7, 9))"
+CHCKDNY2,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.59,99.59,NOM,"('sent', (7, 9))"
+DIABETE4,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.78,99.78,NOM,"('sent', (7, 9))"
+DIABAGE3,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.99,,,
+HAVARTH5,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.34,99.34,NOM,"('sent', (7, 9))"
+ARTHEXER,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",31.99,31.99,NOM,"('sent', (7, 9))"
+ARTHEDU,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",32.34,32.34,NOM,"('sent', (7, 9))"
+LMTJOIN3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",32.17,32.17,NOM,"('sent', (7, 9))"
+ARTHDIS2,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",31.73,31.73,NOM,"('sent', (7, 9))"
+JOINPAI2,KEEP-NUM,R5/R6/R7,keep as NUM (0-10 scale); sentinels 77/99 only - 7 and 9 are valid pain ratings (census miscount); 31.9% effective coverage,28.08,31.9,NUM,"('sent', (77, 99))"
+MARITAL,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",98.86,98.86,NOM,"('sent', (9,))"
+EDUCA,KEEP-ORD,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.44,99.44,ORD,"('sent', (9,))"
+RENTHOM1,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",98.95,98.95,NOM,"('sent', (7, 9))"
+NUMHHOL3,DROP-MODE,R2,"rule 7 judgment under rule 2 'etc.': residential-telephone count = dual-frame weighting admin (passes rule 5 at 26.6% but is telephone logistics, not health)",26.58,,,
+NUMPHON3,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),7.01,,,
+CPDEMO1B,DROP-MODE,R2,"rule 7 judgment under rule 2 'etc.': cell-phone usage share, the _DUALUSE weighting input (interview-mode admin)",98.54,,,
+VETERAN3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",99.27,99.27,NOM,"('sent', (7, 9))"
+EMPLOY1,KEEP-NOM,R5/R6/R7,"keep; sentinel 9 only - code 7 = 'Retired' is VALID (census miscounted 131,546 retirees as sentinels)",68.13,98.12,NOM,"('sent', (9,))"
+CHILDREN,ENG,R5/R6/R7,"ENG: 88 = none -> 0, 99 = refused -> NaN (codebook has NO 77 code); 7/9 children are valid",97.48,97.56,ENG,"('child',)"
+INCOME3,KEEP-ORD,R5/R6/R7,keep as ORDINAL 1-11; sentinels 77/99 - 7 and 9 are valid income brackets (census miscount),54.08,78.48,ORD,"('sent', (77, 99))"
+PREGNANT,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,18.25,,,
+WEIGHT2,DROP-DUP,R6,rule 6: raw weight - keep _BMI5,90.72,,,
+HEIGHT3,DROP-DUP,R6,"rule 6: raw height - keep _BMI5 (div 100, numeric)",94.4,,,
+DEAF,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",96.26,96.26,NOM,"('sent', (7, 9))"
+BLIND,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",96.04,96.04,NOM,"('sent', (7, 9))"
+DECIDE,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",95.45,95.45,NOM,"('sent', (7, 9))"
+DIFFWALK,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",95.48,95.48,NOM,"('sent', (7, 9))"
+DIFFDRES,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",95.51,95.51,NOM,"('sent', (7, 9))"
+DIFFALON,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",95.12,95.12,NOM,"('sent', (7, 9))"
+SMOKE100,DROP-DUP,R6,rule 6: raw smoking input - keep _SMOKER3 (ordinal 1-4 composite),94.42,,,
+SMOKDAY2,DROP-DUP,R6,rule 6: raw smoking input - keep _SMOKER3,38.09,,,
+USENOW3,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",94.78,94.78,NOM,"('sent', (7, 9))"
+ECIGNOW1,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",94.54,94.54,NOM,"('sent', (7, 9))"
+ALCDAY5,ENG,R5/R6/R7,"ENG decode: 101-107 days/week x4.33, 201-230 days/month, 888 (no drinks) -> 0, 777/999 -> NaN",93.03,93.03,ENG,"('alc',)"
+AVEDRNK3,ENG,R5/R6/R7,"rule 7 keep (raw alcohol item); ENG: 88 'none' -> 0, 77/99 -> NaN; 7/9 drinks valid",46.89,47.15,ENG,"('avedrnk',)"
+DRNK3GE5,ENG,R5/R6/R7,"ENG: 88 'none' -> 0, 77/99 -> NaN (ADR-005 spec)",46.87,47.07,ENG,"('drnk',)"
+MAXDRNKS,KEEP-NUM,R5/R6/R7,"rule 7 keep (raw alcohol item, no 88 code); 77/99 -> NaN",45.02,46.0,NUM,"('sent', (77, 99))"
+FLUSHOT7,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",92.84,92.84,NOM,"('sent', (7, 9))"
+FLSHTMY3,KEEP-NOM,R5/R6/R7,"rule 7 keep as NOMINAL: raw MMYYYY immunization item surviving rule 5 (44.3% effective coverage); 777777/999999 -> NaN; 37 malformed-but-real codes (772020, 2020...) retained as categories",48.11,44.32,NOM,"('mmyyyy',)"
+IMFVPLA2,KEEP-NOM,R5/R6/R7,keep; sentinels 77/99 only - 7 (ER) and 9 (other place) are VALID among codes 1-12,45.83,47.17,NOM,"('sent', (77, 99))"
+PNEUVAC4,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",85.68,85.68,NOM,"('sent', (7, 9))"
+HIVTST7,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",88.18,88.18,NOM,"('sent', (7, 9))"
+HIVTSTD3,DROP-MODULE,R5,"rule 5: <25% effective coverage - census 29.2% overstates it because the EXP-000 scan missed the 777777 (DK) / 999999 (refused) sentinels (38,035 + 779 rows); true coverage ~20.3%",29.18,,,
+FRUIT2,ENG,R5/R6/R7,"ENG decode to times/month: 1xx/day x30.4, 2xx/week x4.33, 300 '<1/mo' -> 0.5, 3xx/mo, 555 'never' -> 0, 777/999 -> NaN",89.98,89.98,ENG,"('fv',)"
+FRUITJU2,ENG,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",89.89,89.89,ENG,"('fv',)"
+FVGREEN1,ENG,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",89.91,89.91,ENG,"('fv',)"
+FRENCHF1,ENG,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",89.8,89.8,ENG,"('fv',)"
+POTATOE1,ENG,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",88.96,88.96,ENG,"('fv',)"
+VEGETAB2,ENG,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",88.94,88.94,ENG,"('fv',)"
+PDIABTST,DROP-MODULE,R5,"rule 5: 24.86% effective coverage - just under the 25% gate (borderline call resolved by the rule, not discretion)",24.86,,,
+PREDIAB1,KEEP-NOM,R5/R6/R7,rule 5 keep: 25.98% coverage - just above the 25% gate,25.98,25.98,NOM,"('sent', (7, 9))"
+INSULIN1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),5.05,,,
+BLDSUGAR,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),4.91,,,
+FEETCHK3,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),4.88,,,
+DOCTDIAB,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),4.87,,,
+CHKHEMO3,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),4.8,,,
+FEETCHK,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),4.86,,,
+EYEEXAM1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),4.95,,,
+DIABEYE,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),4.99,,,
+DIABEDU,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),5.03,,,
+TOLDCFS,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,0.0,,,
+HAVECFS,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,0.0,,,
+WORKCFS,DROP-CONSTANT,R3,rule 3: census-constant (<=1 distinct value); 8 of these are also rule-2 landline/cell flow columns,0.0,,,
+TOLDHEPC,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.45,,,
+TRETHEPC,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.04,,,
+PRIRHEPC,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.04,,,
+HAVEHEPC,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.03,,,
+HAVEHEPB,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.44,,,
+MEDSHEPB,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.02,,,
+HPVADVC4,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.65,,,
+HPVADSHT,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.44,,,
+TETANUS1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),3.04,,,
+SHINGLE2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),3.02,,,
+LCSFIRST,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.77,,,
+LCSLAST,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.6,,,
+LCSNUMCG,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.6,,,
+LCSCTSCN,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),6.76,,,
+HADMAM,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.16,,,
+HOWLONG,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.67,,,
+CERVSCRN,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.0,,,
+CRVCLCNC,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.07,,,
+CRVCLPAP,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.07,,,
+CRVCLHPV,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.76,,,
+HADHYST2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.12,,,
+PSATEST1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.48,,,
+PSATIME1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.25,,,
+PCPSARS2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.25,,,
+PCSTALK,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.23,,,
+HADSIGM4,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.75,,,
+COLNSIGM,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.26,,,
+COLNTES1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.03,,,
+SIGMTES1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.01,,,
+LASTSIG4,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.21,,,
+COLNCNCR,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.71,,,
+VIRCOLO1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.36,,,
+VCLNTES1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.04,,,
+SMALSTOL,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.36,,,
+STOLTEST,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.27,,,
+STOOLDN1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.36,,,
+BLDSTFIT,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.07,,,
+SDNATES1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.09,,,
+CNCRDIFF,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.24,,,
+CNCRAGE,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.21,,,
+CNCRTYP1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.11,,,
+CSRVTRT3,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.63,,,
+CSRVDOC1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.91,,,
+CSRVSUM,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.95,,,
+CSRVRTRN,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.99,,,
+CSRVINST,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.72,,,
+CSRVINSR,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.0,,,
+CSRVDEIN,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.0,,,
+CSRVCLIN,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.0,,,
+CSRVPAIN,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.03,,,
+CSRVCTL2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.19,,,
+HOMBPCHK,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",28.55,28.55,NOM,"('sent', (7, 9))"
+HOMRGCHK,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",28.58,28.58,NOM,"('sent', (7, 9))"
+WHEREBP,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),8.95,,,
+SHAREBP,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),8.9,,,
+WTCHSALT,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),8.17,,,
+DRADVISE,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),8.16,,,
+CIMEMLOS,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),7.47,,,
+CDHOUSE,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.98,,,
+CDASSIST,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.98,,,
+CDHELP,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.29,,,
+CDSOCIAL,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.97,,,
+CDDISCUS,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.98,,,
+CAREGIV1,KEEP-NOM,R5/R6/R7,keep; value 8 = 'caregiving recipient died in past 30 days' (328 rows) is a valid codebook response - own nominal category,42.67,42.67,NOM,"('sent', (7, 9))"
+CRGVREL4,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),7.71,,,
+CRGVLNG1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),8.63,,,
+CRGVHRS1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),8.17,,,
+CRGVPRB3,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),7.85,,,
+CRGVALZD,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),7.65,,,
+CRGVPER1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),8.65,,,
+CRGVHOU1,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),8.64,,,
+CRGVEXPT,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",31.42,31.42,NOM,"('sent', (7, 9))"
+ACEDEPRS,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,13.05,,,
+ACEDRINK,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,13.1,,,
+ACEDRUGS,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,13.09,,,
+ACEPRISN,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,13.12,,,
+ACEDIVRC,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,13.06,,,
+ACEPUNCH,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.89,,,
+ACEHURT1,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.95,,,
+ACESWEAR,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.88,,,
+ACETOUCH,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.9,,,
+ACETTHEM,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.9,,,
+ACEHVSEX,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.9,,,
+ACEADSAF,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,13.0,,,
+ACEADNED,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,13.02,,,
+MARIJAN1,ENG,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",30.97,31.02,ENG,"('marj',)"
+USEMRJN3,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),3.07,,,
+RSNMRJN2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),3.06,,,
+LASTSMK2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),3.85,,,
+STOPSMK2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),5.46,,,
+FIREARM5,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),6.26,,,
+GUNLOAD,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),2.68,,,
+LOADULK2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),0.97,,,
+RCSGENDR,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.2,,,
+RCSRLTN2,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.39,,,
+CASTHDX2,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,11.85,,,
+CASTHNO2,DROP-SPARSE,R4,rule 4: >90% blank+sentinel (micro-coverage module artifact),1.28,,,
+BIRTHSEX,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,22.38,,,
+SOMALE,KEEP-NOM,R5/R6/R7,rule 5 keep: 25.23% coverage - the lowest-coverage kept column,25.23,25.23,NOM,"('sent', (7, 9))"
+SOFEMALE,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",28.84,28.84,NOM,"('sent', (7, 9))"
+TRNSGNDR,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",55.17,55.17,NOM,"('sent', (7, 9))"
+QSTVER,DROP-ID,R2,rule 7 judgment: questionnaire-version instrument admin (state module set) - no respondent content,100.0,,,
+QSTLANG,KEEP-NOM,R5/R6/R7,"rule 7 judgment keep: interview language (1 English / 2 Spanish) is a respondent attribute, not instrument admin (QSTVER dropped)",100.0,100.0,NOM,"('none',)"
+_METSTAT,DROP-DUP,R6,rule 7 judgment: urbanicity sibling of kept _URBSTAT - keep one representation per pair,98.39,,,
+_URBSTAT,KEEP-NOM,R5/R6/R7,"kept urbanicity flag (rule 7: sibling _METSTAT dropped, one per pair)",98.39,98.39,NOM,"('none',)"
+MSCODE,DROP-ID,R2,rule 7 judgment: MSA geo-stratum admin (weighting geography); redundant with kept _STATE + _URBSTAT,26.44,,,
+_STSTR,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+_STRWT,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+_RAWRAKE,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+_WT2RAKE,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+_IMPRACE,DROP-DUP,R6,rule 6: imputed race - keep _RACE,100.0,,,
+_CHISPNC,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.77,,,
+_CRACE1,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,11.89,,,
+_CPRACE1,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,12.44,,,
+CAGEG,DROP-MODULE,R5,rule 5: <25% effective coverage after sentinel recode,11.07,,,
+_CLLCPWT,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),13.01,,,
+_DUALUSE,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),39.6,,,
+_DUALCOR,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),39.6,,,
+_LLCPWT2,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+_LLCPWT,DROP-ID,R2,rule 2: identifier / date / dispatch / weight / stratum / instrument admin (no health content),100.0,,,
+_RFHLTH,DROP-LEAK,R1,rule 1: calculated directly from GENHLTH (fair/poor flag) - empirically 100.0% agreement with y (EXP-000); it IS the target,99.74,,,
+_PHYS14D,DROP-LEAK,R1,rule 1: binned PHYSHLTH (GENHLTH-family derived; leakage blacklist),97.84,,,
+_MENT14D,DROP-LEAK,R1,rule 1: binned MENTHLTH (GENHLTH-family derived; leakage blacklist),98.2,,,
+_HLTHPLN,DROP-DUP,R6,rule 6: any-coverage flag - keep PRIMINSR (11-category detail),96.03,,,
+_HCVU652,DROP-DUP,R6,rule 6 family (rule 7): computed no-coverage flag from kept PRIMINSR (+ age),60.61,,,
+_TOTINDA,DROP-DUP,R6,"rule 6: PROVEN identical to kept EXERANY2 (EXP-000: identical n = 436,659, identical rho = 0.2465)",99.79,,,
+_RFHYPE6,DROP-DUP,R6,rule 6: computed BP flag from kept BPHIGH6,99.56,,,
+_CHOLCH3,DROP-DUP,R6,rule 6: computed flag from kept CHOLCHK3,93.21,,,
+_RFCHOL3,DROP-DUP,R6,rule 6: computed flag from kept TOLDHI3,85.35,,,
+_MICHD,DROP-DUP,R6,rule 6: computed MI/CHD composite of kept CVDINFR4 + CVDCRHD4,98.94,,,
+_LTASTH1,DROP-DUP,R6,rule 6: computed flag from kept ASTHMA3,99.6,,,
+_CASTHM1,DROP-DUP,R6,rule 6: computed flag from ASTHMA3 + ASTHNOW,99.19,,,
+_ASTHMS1,DROP-DUP,R6,rule 6: computed 3-level asthma status from ASTHMA3/ASTHNOW,99.19,,,
+_DRDXAR3,DROP-DUP,R6,"rule 6: PROVEN identical to kept HAVARTH5 (EXP-000: identical n = 434,721, identical rho = -0.2172, identical 0.66% missing)",99.34,,,
+_LMTACT3,DROP-DUP,R6,rule 6: computed flag from kept LMTJOIN3,99.02,,,
+_LMTWRK3,DROP-DUP,R6,rule 6: computed flag from kept ARTHDIS2,98.58,,,
+_PRACE1,DROP-DUP,R6,rule 6: raw race detail - keep _RACE (single nominal grouping),96.64,,,
+_MRACE1,DROP-DUP,R6,rule 6: raw race detail - keep _RACE,94.55,,,
+_HISPANC,DROP-DUP,R6,rule 6: Hispanic origin - absorbed by kept _RACE (code 8),98.65,,,
+_RACE,KEEP-NOM,R5/R6/R7,"whitelisted per ADR-005 rules 5-7 (coverage >= 25%, duplicate-pair winner or rule-7 judgment as noted in src/preprocessing.py docstring)",95.39,97.49,NOM,"('sent', (9,))"
+_RACEG21,DROP-DUP,R6,rule 6: race grouping - keep _RACE,97.49,,,
+_RACEGR3,DROP-DUP,R6,rule 6: race grouping - keep _RACE,97.49,,,
+_RACEPRV,DROP-DUP,R6,rule 6: race grouping (provider) - keep _RACE,97.9,,,
+_SEX,DROP-DUP,R6,rule 6: identical information to kept SEXVAR (watchlist Tier 2),100.0,,,
+_AGEG5YR,DROP-DUP,R6,"rule 6: age bins - keep _AGE80 (numeric, imputed, no sentinels)",82.13,,,
+_AGE65YR,DROP-DUP,R6,rule 6: age bins - keep _AGE80,100.0,,,
+_AGE80,KEEP-NUM,R5/R6/R7,"keep as NUM: imputed age 18-80, NO sentinels (census miscounted age 77 as sentinel); _AGEG5YR/_AGE65YR/_AGE_G dropped per rule 6",98.66,100.0,NUM,"('none',)"
+_AGE_G,DROP-DUP,R6,rule 6: age bins - keep _AGE80,100.0,,,
+HTIN4,DROP-DUP,R6,rule 6 family (rule 7): metric height = linear transform of dropped HEIGHT3; BMI is the kept representation,93.41,,,
+HTM4,DROP-DUP,R6,rule 6 family (rule 7): metric height = linear transform of dropped HEIGHT3,94.4,,,
+WTKG3,DROP-DUP,R6,rule 6 family (rule 7): metric weight = linear transform of dropped WEIGHT2,90.75,,,
+_BMI5,ENG,R5/R6/R7,"ENG: /100 (2 implied decimals), blank = DK/refused -> NaN; 89 rows > 80.0 kept (codebook-legal, flagged for P3/P5)",89.32,89.32,ENG,"('bmi',)"
+_BMI5CAT,DROP-DUP,R6,rule 6: binned BMI - keep _BMI5 (continuous),89.32,,,
+_RFBMI5,DROP-DUP,R6,rule 6: BMI flag - keep _BMI5,89.32,,,
+_CHLDCNT,DROP-DUP,R6,rule 6 family (rule 7): computed binning of kept CHILDREN,97.56,,,
+_EDUCAG,DROP-DUP,R6,"rule 6: binned education - keep EDUCA (6 levels, ordinal)",99.44,,,
+_INCOMG1,DROP-DUP,R6,"rule 6: binned income - keep INCOME3 (11 levels, ordinal)",74.16,,,
+_SMOKER3,KEEP-ORD,R5/R6/R7,rule 6 winner: ordinal 1-4 smoker status; 9 = DK/refused/missing -> NaN,94.31,94.31,ORD,"('sent', (9,))"
+_RFSMOK3,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),94.31,,,
+_CURECI1,DROP-DUP,R6,rule 6: computed e-cig flag from kept ECIGNOW1,94.54,,,
+DRNKANY5,DROP-DUP,R6,rule 6: computed any-alcohol flag from kept ALCDAY5 (888<->2 exact match),93.03,,,
+DROCDY3_,DROP-DUP,R6,rule 6: computed drink-occasions-per-day from kept ALCDAY5,94.29,,,
+_RFBING5,DROP-DUP,R6,rule 6: computed binge flag from kept DRNK3GE5,91.95,,,
+_DRNKWK1,DROP-DUP,R6,rule 6: computed weekly drinks (ADR-005 explicit drop),100.0,,,
+_RFDRHV7,DROP-DUP,R6,rule 6: computed heavy-drinking flag (ADR-005 explicit drop),92.02,,,
+_FLSHOT7,DROP-DUP,R6,rule 6: computed flag from kept FLUSHOT7,32.79,,,
+_PNEUMO3,DROP-DUP,R6,rule 6: computed flag from kept PNEUVAC4,31.78,,,
+_AIDTST4,DROP-DUP,R6,rule 6: computed flag from kept HIVTST7,88.18,,,
+FTJUDA2_,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),85.46,,,
+FRUTDA2_,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),88.27,,,
+GRENDA1_,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),86.6,,,
+FRNCHDA_,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),79.66,,,
+POTADA1_,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),80.31,,,
+VEGEDA2_,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),87.74,,,
+_MISFRT1,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),100.0,,,
+_MISVEG1,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),100.0,,,
+_FRTRES1,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),100.0,,,
+_VEGRES1,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),100.0,,,
+_FRUTSU1,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),87.24,,,
+_VEGESU1,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),85.69,,,
+_FRTLT1A,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),88.35,,,
+_VEGLT1A,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),86.29,,,
+_FRT16A,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),100.0,,,
+_VEG23A,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),100.0,,,
+_FRUITE1,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),100.0,,,
+_VEGETE1,DROP-DUP,R6,rule 6: duplicate of a kept representation (computed flag / binned / linear transform of a kept raw column),100.0,,,

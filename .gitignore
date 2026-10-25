@@ -1,0 +1,34 @@
+# ---- Data: never commit raw or derived data ----
+data/raw/
+data/interim/
+
+# ---- Large local-only reference files ----
+docs/codebook.pdf
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# ---- Model artifacts ----
+*.pkl
+*.joblib
+*.bin
+*.model
+*.lgb
+
+# ---- Obsidian volatile files ----
+.obsidian/workspace*
+.obsidian/cache
+.trash/
+
+# ---- OS ----
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ---- Env / secrets ----
+.env

@@ -52,6 +52,8 @@ Binary framing per [[ADR-001]]: {4,5} → 1 (16.6%), {1,2,3} → 0. **Confirmed 
 - **FLSHTMY3**: MMYYYY codes kept as nominal; 777777/999999 → NaN; 37 malformed-but-real codes retained as categories.
 
 > [!warning] Never treat sentinels as numbers. 88-days = 0 days, not 88. **EXP-000:** PHYSHLTH alone has **287,796** rows coded 88 (≈66% of all rows) — the 88→0 recode is **mandatory** before modeling ([[ADR-004 tier-3 leakage resolution]]).
+>
+> **Empirical proof (P3 EDA):** PHYSHLTH's Spearman ρ vs y **flips sign** after the recode — **−0.293 on raw codes** (sentinel dominates, [[EXP-000 data profiling]]) → **+0.450 after 88→0** (strongest whitelist feature, [[EDA v1 summary]]). Sentinel-as-number would have handed the model an *inverted* health signal.
 
 ## Key section map (columns to triage)
 - **Identifiers/admin (drop):** SEQNO, _PSU, IDATE, IMONTH, IDAY, IYEAR, FMONTH, DISPCODE

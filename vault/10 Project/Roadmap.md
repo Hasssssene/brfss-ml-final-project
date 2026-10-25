@@ -18,12 +18,12 @@ Deadline: **2026-11-08 23:59 (C2)**. Statuses: ☐ todo · ◐ in progress · �
 - ✅ BMI from _BMI5; day-count vars (88→0); imputation strategy (fold-safe) *(BMI ÷100 + all ENG recodes done; fold-safe imputation design moves to P3 CV pipelines — smoke test used simple median/mode on a 50k subsample)*
 - ✅ Checkpoint cleaned matrix → `data/interim/` (parquet) *(`clean_v1.parquet` 438,693×76 + `target_v1.parquet` + `column_meta.json`; 20.54% overall missingness; smoke train AUC 0.8966 — not an experiment)*
 
-## P3 — EDA + baselines ◐ (Basic level complete)
-- ☐ EDA figures: target imbalance, missingness map, top associations, correlation heatmap
-- ☐ EXP-001 DummyClassifier ROC-AUC baseline (expect 0.5)
-- ☐ EXP-002 LogisticRegression, EXP-003 DecisionTree (manual tuning, documented)
+## P3 — EDA + baselines ✅ (Basic level complete)
+- ✅ EDA figures: target imbalance, missingness map, top associations, correlation heatmap *(5 figures committed: `eda_target_imbalance`, `eda_missingness_matrix`, `eda_association_top25`, `eda_correlation_heatmap`, `eda_key_features_by_class`; [[EDA v1 summary]]; ⚠ figures verified programmatically — human visual pass required before report embedding)*
+- ✅ EXP-001 DummyClassifier ROC-AUC baseline (expect 0.5) *(0.500000 exactly on all 10 folds; [[EXP-001 dummy baseline]])*
+- ✅ EXP-002 LogisticRegression, EXP-003 DecisionTree (manual tuning, documented) *(LogReg C=0.01 → **0.892588**; Tree (16, 200) → **0.880206**; identical folds sha `3b3a17457039` across all 17 runs; harness `src/experiments.py` now resume-safe — skips logged exp_ids, re-asserts fold hash; [[EXP-002 logistic regression]], [[EXP-003 decision tree]])*
 
-## P4 — Model zoo + imbalance (Intermediate)
+## P4 — Model zoo + imbalance (Intermediate) ◐
 - ☐ EXP-004 RandomForest, EXP-005 HistGradientBoosting, EXP-006 LightGBM, EXP-007 XGBoost
 - ☐ Imbalance: class_weight='balanced' vs SMOTE(fold-internal) vs none — EXP-008..010
 

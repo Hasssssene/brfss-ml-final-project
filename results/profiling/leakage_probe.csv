@@ -1,0 +1,13 @@
+metric,value
+n_rows_total,438693
+n_genhlth_valid,437532
+n_rfhlth_nonnull,438693
+n_both_present,437532
+n_agree_codebook_recode (_RFHLTH==2 <-> y==1),437532
+agreement_rate_codebook_recode,100.0
+n_agree_reversed_mapping (_RFHLTH==1 <-> y==1),0
+agreement_rate_reversed_mapping,0.0
+pct_rfhlth_eq_1_of_both (Good or Better),83.37470173610158
+pct_rfhlth_eq_2_of_both (Fair or Poor),16.62529826389841
+pct_y1_from_genhlth_on_both_rows,16.62529826389841
+note,"codebook: _RFHLTH 1=Good or Better, 2=Fair or Poor; hence 2<->y=1"

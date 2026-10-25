@@ -8,13 +8,13 @@ Deadline: **2026-11-08 23:59 (C2)**. Statuses: ☐ todo · ◐ in progress · �
 - ✅ Vault bootstrapped: ADR-001..003, leakage watchlist, rubric checklist
 - ✅ Python env: pandas, sklearn, seaborn, lightgbm, xgboost, shap, imblearn
 
-## P1 — Profiling & column triage ◐
-- ☐ EXP-000: load, shape, dtypes, missingness census, sentinel counts, target distribution
-- ☐ Column triage note: keep/drop per column with reasons (mode-only vars, module vars, leakage)
-- ☐ Correlation screen: features vs target, duplicate-pair confirmation (e.g. _BMI5 vs HEIGHT3/WEIGHT2)
+## P1 — Profiling & column triage ✅
+- ✅ EXP-000: load, shape, dtypes, missingness census, sentinel counts, target distribution ([[EXP-000 data profiling]]; 438,693×303; 16.63% positives; `_RFHLTH` 100% target match)
+- ✅ Column triage note: keep/drop per column with reasons (mode-only vars, module vars, leakage) — EXP-000 evidence + open-question resolutions recorded; per-column verdict table finalized during P2 whitelist build
+- ✅ Correlation screen: features vs target, duplicate-pair confirmation (e.g. _BMI5 vs HEIGHT3/WEIGHT2) (top assoc DIFFWALK ρ=−0.413; dups confirmed: EXERANY2≡_TOTINDA, _DRDXAR3≡HAVARTH5)
 
-## P2 — Cleaning & feature matrix v1
-- ☐ Recode sentinels → NaN (per-codebook dictionary); ordinal vs nominal encoding plan
+## P2 — Cleaning & feature matrix v1 ◐
+- ◐ Recode sentinels → NaN (per-codebook dictionary); ordinal vs nominal encoding plan *(started: EXP-000 sentinel census + ADR-004 rules — 88→0 day-count recode, POORHLTH sentinel→NaN + imputation, hard exclusions GENHLTH/_RFHLTH/_PHYS14D/_MENT14D)*
 - ☐ BMI from _BMI5; day-count vars (88→0); imputation strategy (fold-safe)
 - ☐ Checkpoint cleaned matrix → `data/interim/` (parquet)
 

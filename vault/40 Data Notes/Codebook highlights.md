@@ -3,7 +3,7 @@
 Source: `docs/codebook.pdf` (CDC BRFSS 2021 codebook, llcp-v2-508). Notes below were extracted while planning; **verify against the actual CSV in EXP-000** before relying on them. #data
 
 ## Dataset shape
-- ~438,693 respondent records, 300+ columns (exact count confirmed in EXP-000)
+- **438,693 respondent records × 303 columns** (confirmed EXP-000; all numeric dtype in the CSV)
 - Two interview modes: landline and cell phone — many columns asked only to one mode's respondents (blank for the rest) → pruning criterion
 - Optional modules (state-selected): prediabetes, CFS, hepatitis, HPV, tetanus, shingles, lung-cancer screening, cancer screening, caregiver, ACEs, marijuana — partial coverage → pruning criterion unless module adds value
 
@@ -19,7 +19,10 @@ Source: `docs/codebook.pdf` (CDC BRFSS 2021 codebook, llcp-v2-508). Notes below 
 | 9 | Refused | 369 | — |
 | blank | missing | 4 | — |
 
-Binary framing per [[ADR-001]]: {4,5} → 1 (16.6%), {1,2,3} → 0.
+Binary framing per [[ADR-001]]: {4,5} → 1 (16.6%), {1,2,3} → 0. **Confirmed in EXP-000:** 437,532 valid rows, 72,741 positives = **16.63%**; 1,161 rows dropped (788 DK + 369 refused + 4 blank).
+
+### `_RFHLTH` coding (verified EXP-000)
+1 = Good or Better (y = 0), **2 = Fair or Poor (y = 1)**. Agreement with our binary target: **100.0%** (perfectly diagonal crosstab) → Tier-1 blacklist empirically confirmed ([[Leakage watchlist]]).
 
 ## Missing-value sentinels (general pattern)
 | Pattern | Meaning | Examples |
@@ -31,7 +34,7 @@ Binary framing per [[ADR-001]]: {4,5} → 1 (16.6%), {1,2,3} → 0.
 | 7777 / 9999 | DK / Refused | HEIGHT3, WEIGHT2 |
 | 9999900-series | computed-impossible markers | some `_`-calculated cols |
 
-> [!warning] Never treat sentinels as numbers. 88-days = 0 days, not 88.
+> [!warning] Never treat sentinels as numbers. 88-days = 0 days, not 88. **EXP-000:** PHYSHLTH alone has **287,796** rows coded 88 (≈66% of all rows) — the 88→0 recode is **mandatory** before modeling ([[ADR-004 tier-3 leakage resolution]]).
 
 ## Key section map (columns to triage)
 - **Identifiers/admin (drop):** SEQNO, _PSU, IDATE, IMONTH, IDAY, IYEAR, FMONTH, DISPCODE

@@ -1,0 +1,14 @@
+code,label,n,pct,base
+1,Excellent,77741,17.721048660452755,all_rows
+2,Very good,149112,33.99005682789559,all_rows
+3,Good,137938,31.44294529431744,all_rows
+4,Fair,54736,12.477062547157123,all_rows
+5,Poor,18005,4.1042369037117075,all_rows
+7,Don't know (sentinel),788,0.17962447543042628,all_rows
+9,Refused (sentinel),369,0.08411349166729352,all_rows
+blank,Not asked / missing,4,0.0009117993676671385,all_rows
+n_valid_target,rows with valid target (GENHLTH 1-5),437532,99.73535023353462,all_rows
+y=0,"GENHLTH in {1,2,3} (Excellent/Very good/Good)",364791,83.37470173610158,valid_target
+y=1,"GENHLTH in {4,5} (Fair/Poor)",72741,16.62529826389841,valid_target
+binary_rate_y1,y=1 rate among valid target rows,72741,16.62529826389841,valid_target
+n_dropped_invalid,rows dropped (GENHLTH 7/9/blank),1161,0.26464976646538696,all_rows

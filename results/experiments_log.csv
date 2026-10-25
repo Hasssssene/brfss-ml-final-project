@@ -1,0 +1,2 @@
+exp_id,timestamp,model,feature_set,imbalance_strategy,params,roc_auc_fold01,roc_auc_fold02,roc_auc_fold03,roc_auc_fold04,roc_auc_fold05,roc_auc_fold06,roc_auc_fold07,roc_auc_fold08,roc_auc_fold09,roc_auc_fold10,roc_auc_mean,notes
+EXP-000,2026-10-25T17:30:54,none (data profiling),all raw columns,n/a,n/a,,,,,,,,,,,,profiling run; see results/profiling/

@@ -13,3 +13,4 @@
 | 7 | 2026-10-25 | OpenCode agent (GLM, Z.ai) | EDA figures + association/correlation analysis (results/analysis/eda_notes.md) | Figures committed to figures/; findings to be cited in the report after human visual review |
 | 8 | 2026-11-02 | OpenCode agent (GLM, Z.ai) | P4 model zoo implementation + runs (src/p4_models.py), imbalance comparison, NaN-passthrough verification, harness parser fix | Results logged in experiments_log.csv; verdicts documented in vault; to be cited in report |
 | 9 | 2026-11-02 | OpenCode agent (GLM, Z.ai) | P5 feature-selection experiments (SelectKBest, fold-internal gain importances, H1/complement subsets, PCA), figures and summary | Results logged in experiments_log.csv; H1 verdict + importance findings documented in vault for report citation |
+| 10 | 2026-11-02 | OpenCode agent (GLM, Z.ai) | P6 randomized searches, tuned finals, nested CV, Wilcoxon tests (src/p6_tune.py) | Results logged; statistical verdicts documented for report |

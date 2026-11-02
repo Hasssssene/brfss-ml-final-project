@@ -1,0 +1,37 @@
+[
+  {
+    "cmd": "probe",
+    "timestamp": "2026-11-02T17:21:59",
+    "wall_s": 79.7
+  },
+  {
+    "cmd": "search",
+    "timestamp": "2026-11-02T17:44:35",
+    "wall_s": 1308.7
+  },
+  {
+    "cmd": "finals",
+    "timestamp": "2026-11-02T17:48:26",
+    "wall_s": 221.7
+  },
+  {
+    "cmd": "nested",
+    "timestamp": "2026-11-02T18:15:00",
+    "wall_s": 1586.6
+  },
+  {
+    "cmd": "wilcoxon",
+    "timestamp": "2026-11-02T18:15:25",
+    "wall_s": 0.6
+  },
+  {
+    "cmd": "figure",
+    "timestamp": "2026-11-02T18:15:32",
+    "wall_s": 0.5
+  },
+  {
+    "cmd": "summary",
+    "timestamp": "2026-11-02T18:15:32",
+    "wall_s": 0.0
+  }
+]

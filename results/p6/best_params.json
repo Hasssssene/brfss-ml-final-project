@@ -1,0 +1,59 @@
+{
+  "lgbm": {
+    "best_params": {
+      "colsample_bytree": 0.5979914312095727,
+      "learning_rate": 0.021908197340907744,
+      "min_child_samples": 44,
+      "n_estimators": 512,
+      "num_leaves": 94,
+      "reg_lambda": 3.1234907221207773,
+      "subsample": 0.815876852955632
+    },
+    "best_inner_mean_auc": 0.9042224168273487,
+    "best_inner_std_auc": 0.0010508500327758474,
+    "best_rank": 1,
+    "n_candidates": 15,
+    "inner_cv": "StratifiedKFold(5, shuffle=True, random_state=42) - model selection only, NOT the canonical comparison folds",
+    "fit_on": "full X,y (437,532 rows)",
+    "wall_s": 334.5,
+    "parent_warnings": []
+  },
+  "search_config": {
+    "n_iter": 15,
+    "scoring": "roc_auc",
+    "random_state": 42,
+    "inner_cv_splits": 5,
+    "n_estimators_range_inclusive": [
+      300,
+      600
+    ],
+    "space": {
+      "lgbm": "n_estimators~randint[300,600]; learning_rate~logU[0.02,0.15]; subsample~U[0.6,1.0]; colsample_bytree~U[0.5,1.0]; reg_lambda~logU[0.1,10]; num_leaves~randint[15,127]; min_child_samples~randint[5,100]; subsample_freq=1 fixed",
+      "xgb": "n_estimators~randint[300,600]; learning_rate~logU[0.02,0.15]; subsample~U[0.6,1.0]; colsample_bytree~U[0.5,1.0]; reg_lambda~logU[0.1,10]; max_depth~randint[3,10]; min_child_weight~randint[1,20]"
+    },
+    "generated": "2026-11-02T17:44:35",
+    "budget_adjustments": [
+      "SEARCH_N_ITER 20 -> 15 (Part 1): probe + P4-calibrated projections put the n_iter=20 worst case over the 90-min budget",
+      "n_estimators range [300,800] -> [300,600] (Parts 1+3, same space shared): same reason; untuned configs (500 trees) stay inside the range"
+    ]
+  },
+  "xgb": {
+    "best_params": {
+      "colsample_bytree": 0.5499874579090014,
+      "learning_rate": 0.05045461670694084,
+      "max_depth": 7,
+      "min_child_weight": 4,
+      "n_estimators": 451,
+      "reg_lambda": 2.0034427927560734,
+      "subsample": 0.6225646316108401
+    },
+    "best_inner_mean_auc": 0.903679149884745,
+    "best_inner_std_auc": 0.0010592769704233734,
+    "best_rank": 1,
+    "n_candidates": 15,
+    "inner_cv": "StratifiedKFold(5, shuffle=True, random_state=42) - model selection only, NOT the canonical comparison folds",
+    "fit_on": "full X,y (437,532 rows)",
+    "wall_s": 973.7,
+    "parent_warnings": []
+  }
+}

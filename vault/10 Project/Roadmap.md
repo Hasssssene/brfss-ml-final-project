@@ -32,12 +32,12 @@ Deadline: **2026-11-08 23:59 (C2)**. Statuses: ☐ todo · ◐ in progress · �
 - ✅ SelectKBest + RFECV/permutation importance; selected-subset vs all-features — EXP-011.. *([[EXP-011 selectkbest vs gain importance]]: kbest below all-76 at every k — best k=200 → 0.899670 vs 0.903355, MI∩gain overlap only 3/10 @top-10; adopted fold-internal **gain importances** instead: PHYSHLTH 51.7% of gain, B2 block 55.0%; [[EXP-012 hypothesis H1 subsets]]: H1-subset 0.900051/0.900316 vs baselines, complement standalone 0.811844 but adds only ~+0.003 incrementally; keep all-76)*
 - ✅ PCA variant — EXP-0xx *([[EXP-013 pca]]: n=50/100/200 → 0.881126/0.886203/0.888800, **all ≥0.0146 below all-76**; honest negative — compression smears one-hot structure, forfeits NaN routing)*
 
-## P6 — Tuning & statistics ◐
-- ☐ RandomizedSearchCV on top-2 models (fixed folds) *(acceleration candidate: RUS(0.5) = ~2× faster per fit at −0.0003 AUC — [[EXP-010 random undersampler]]; final config re-validated on full folds)*
-- ☐ Nested CV unbiased estimate
-- ☐ Wilcoxon signed-rank on 10 fold scores, top-2 models
+## P6 — Tuning & statistics ✅ (2026-11-02, Intermediate stats + Advanced tuning evidenced)
+- ✅ RandomizedSearchCV on top-2 models (fixed folds) *(budget levers applied & documented after the timing probe projected a ~110-min XGB worst case > the 90-min budget: n_iter 20→15, n_estimators [300,800]→[300,600]; actual wall **53.3 min**; search winners → **tuned LGBM 0.904321 = final best** (+0.000966 vs EXP-006, 10/10 folds), tuned XGB 0.903843 (+0.000486, 9/10); [[EXP-014 randomized search tuned finals]])*
+- ✅ Nested CV unbiased estimate *(EXP-015: **0.904303 ± 0.001700** — optimism of the non-nested estimate just **+0.000018**, search width does not overfit; 7/10 outer folds re-selected the Part-1 winner; [[EXP-015 nested CV]])*
+- ✅ Wilcoxon signed-rank on 10 fold scores, top-2 models *(**3/3 significant at the n=10 floor p=0.001953**: tuned LGBM > tuned XGB (median Δ +0.000471), > untuned self (+0.000991), > LogReg (+0.011768) — headline: family gain +0.012 ≫ tuning gain +0.001, both real; [[STATISTICAL COMPARISONS]])*
 
-## P7 — Error analysis & XAI
+## P7 — Error analysis & XAI ◐
 - ☐ ≥3 consistently misclassified respondents, profiled, with figures
 - ☐ SHAP global summary + local explanations on best model
 

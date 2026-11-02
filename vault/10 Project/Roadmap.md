@@ -37,11 +37,11 @@ Deadline: **2026-11-08 23:59 (C2)**. Statuses: ☐ todo · ◐ in progress · �
 - ✅ Nested CV unbiased estimate *(EXP-015: **0.904303 ± 0.001700** — optimism of the non-nested estimate just **+0.000018**, search width does not overfit; 7/10 outer folds re-selected the Part-1 winner; [[EXP-015 nested CV]])*
 - ✅ Wilcoxon signed-rank on 10 fold scores, top-2 models *(**3/3 significant at the n=10 floor p=0.001953**: tuned LGBM > tuned XGB (median Δ +0.000471), > untuned self (+0.000991), > LogReg (+0.011768) — headline: family gain +0.012 ≫ tuning gain +0.001, both real; [[STATISTICAL COMPARISONS]])*
 
-## P7 — Error analysis & XAI ◐
-- ☐ ≥3 consistently misclassified respondents, profiled, with figures
-- ☐ SHAP global summary + local explanations on best model
+## P7 — Error analysis & XAI ✅ (2026-11-02, Intermediate complete)
+- ✅ ≥3 consistently misclassified respondents, profiled, with figures *(3 archetype cases, each wrong in **3/3** model families; **88.2% of all errors (42,449/48,124) sit at the GENHLTH 3/4 boundary** — boundary ambiguity, not noise; 9.4% of rows defeat all three learners. Cases: A label-noise FP (p 0.96/0.98/0.99, PHYSHLTH 30d SHAP +1.94, multimorbid, BMI 51.5), B error-floor FN (p 0.0025, uniformly negative SHAP — unmeasured rating anchors), C fence case (p 0.5000022, comorbid block vs clean current status). `results/analysis/error_analysis.md` + `figures/p7_case_profiles.png` + 3 waterfalls; [[ERROR ANALYSIS AND XAI]])*
+- ✅ SHAP global summary + local explanations on best model *(TreeExplainer on the EXP-014a final-model proxy, additivity 8.8e-14, dummy-group aggregation back to 76 columns; top-5 mean|SHAP|: PHYSHLTH 0.681, DIFFWALK 0.216, DIABETE4 0.198, _BMI5 0.185, EDUCA 0.179; **SHAP-vs-gain ρ=0.911 (p=3.6e-30) — confirms the P5/H1 importances**; global beeswarm + 3 local waterfalls; bonus threshold menu τ=0.2886→TPR 0.70/FPR 0.093. Zero log rows by design — OOF is a deterministic consequence of logged EXP-014a/014b/EXP-002a, per-fold AUCs re-verified ≤4.8e-7; [[ERROR ANALYSIS AND XAI]])*
 
-## P8 — Deliverables
+## P8 — Deliverables ◐
 - ☐ Assemble `deliverables/code.py` (end-to-end, clean process)
 - ☐ `report.pdf` full draft through QA audit
 - ☐ Screencast script + recording (≤10 min)

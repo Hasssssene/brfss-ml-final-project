@@ -1,0 +1,54 @@
+{
+  "generated": "2026-11-02T18:54:20",
+  "statement": "OOF predictions are a deterministic consequence of the logged configurations EXP-014a, EXP-014b and EXP-002a (params verbatim from results/p6/best_params.json and the experiments_log rows); no new experiments_log.csv row was appended for this computation - it is not a new CV comparison.",
+  "folds": "StratifiedKFold(n_splits=10, shuffle=True, random_state=42) via src.config.make_folds(); sha asserted against every logged row",
+  "folds_sha256": "3b3a17457039",
+  "models": {
+    "lgbm": {
+      "exp_id": "EXP-014a",
+      "desc": "tuned LGBMClassifier (EXP-014a config)",
+      "params": "{\"colsample_bytree\": 0.5979914312095727, \"learning_rate\": 0.021908197340907744, \"min_child_samples\": 44, \"n_estimators\": 512, \"num_leaves\": 94, \"reg_lambda\": 3.1234907221207773, \"subsample\": 0.815876852955632}"
+    },
+    "xgb": {
+      "exp_id": "EXP-014b",
+      "desc": "tuned XGBClassifier (EXP-014b config)",
+      "params": "{\"colsample_bytree\": 0.5499874579090014, \"learning_rate\": 0.05045461670694084, \"max_depth\": 7, \"min_child_weight\": 4, \"n_estimators\": 451, \"reg_lambda\": 2.0034427927560734, \"subsample\": 0.6225646316108401}"
+    },
+    "lr": {
+      "exp_id": "EXP-002a",
+      "desc": "LogisticRegression C=0.01 pipeline (EXP-002a config)",
+      "params": "C=0.01;max_iter=2000;solver=lbfgs;scaler=StandardScaler"
+    }
+  },
+  "random_state": 42,
+  "fold_column": "1-based fold id (1..10) matching log fold01..fold10",
+  "verification": {
+    "lgbm": {
+      "exp_id": "EXP-014a",
+      "logged_mean_auc": 0.9043212,
+      "oof_mean_auc": 0.9043213299450169,
+      "max_abs_per_fold_auc_deviation": 4.837054017325926e-07,
+      "matches_logged_run": true
+    },
+    "xgb": {
+      "exp_id": "EXP-014b",
+      "logged_mean_auc": 0.9038429000000001,
+      "oof_mean_auc": 0.9038429329988894,
+      "max_abs_per_fold_auc_deviation": 4.7423435389770674e-07,
+      "matches_logged_run": true
+    },
+    "lr": {
+      "exp_id": "EXP-002a",
+      "logged_mean_auc": 0.8925881999999999,
+      "oof_mean_auc": 0.8925880853696249,
+      "max_abs_per_fold_auc_deviation": 4.1413011631075136e-07,
+      "matches_logged_run": true
+    }
+  },
+  "wall_s_per_model": {
+    "lgbm": 66.4,
+    "xgb": 145.8,
+    "lr": 10.4
+  },
+  "n_rows": 437532
+}

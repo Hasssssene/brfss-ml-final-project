@@ -1,0 +1,27 @@
+[
+  {
+    "cmd": "oof",
+    "timestamp": "2026-11-02T18:54:20",
+    "wall_s": 223.8
+  },
+  {
+    "cmd": "errors",
+    "timestamp": "2026-11-02T18:54:40",
+    "wall_s": 1.0
+  },
+  {
+    "cmd": "shap",
+    "timestamp": "2026-11-02T19:01:52",
+    "wall_s": 419.2
+  },
+  {
+    "cmd": "summary",
+    "timestamp": "2026-11-02T19:02:21",
+    "wall_s": 0.0
+  },
+  {
+    "cmd": "summary",
+    "timestamp": "2026-11-02T19:03:25",
+    "wall_s": 0.0
+  }
+]

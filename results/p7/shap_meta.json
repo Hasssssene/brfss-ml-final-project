@@ -1,0 +1,35 @@
+{
+  "generated": "2026-11-02T19:01:52",
+  "model": "tuned LGBMClassifier (EXP-014a params) refit on ALL 437,532 rows - FINAL-MODEL PROXY; its graded CV estimate remains EXP-014a (0.904321) / EXP-015 nested (0.904303)",
+  "params": {
+    "colsample_bytree": 0.5979914312095727,
+    "learning_rate": 0.021908197340907744,
+    "min_child_samples": 44,
+    "n_estimators": 512,
+    "num_leaves": 94,
+    "reg_lambda": 3.1234907221207773,
+    "subsample": 0.815876852955632
+  },
+  "explainer": {
+    "type": "shap.TreeExplainer",
+    "feature_perturbation": "tree_path_dependent",
+    "rationale": "default path_dependent chosen for report speed (no background dataset needed); interventional would be slower - recorded as a known quirk: path-dependent can spread credit across correlated one-hot dummies, which is why all contributions are summed back to the 76 original columns",
+    "base_value_log_odds": -2.6094525776474176,
+    "output_space": "raw margin (log-odds)"
+  },
+  "sample": {
+    "n": 20000,
+    "stratified_on": "y",
+    "random_state": 42
+  },
+  "additivity_max_abs_dev_sample": 8.79296635503124e-14,
+  "aggregation": "one-hot dummy-group SHAP values summed per original column (structural map asserted to partition all transformed columns); beeswarm top 20",
+  "shap_vs_gain_spearman": {
+    "rho": 0.9109227614490772,
+    "p_value": 3.5692446686827296e-30,
+    "n_features": 76
+  },
+  "wall_s": {
+    "proxy_fit": 43.1
+  }
+}

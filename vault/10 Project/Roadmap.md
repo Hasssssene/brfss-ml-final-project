@@ -27,12 +27,12 @@ Deadline: **2026-11-08 23:59 (C2)**. Statuses: ☐ todo · ◐ in progress · �
 - ✅ EXP-004 RandomForest, EXP-005 HistGradientBoosting, EXP-006 LightGBM, EXP-007 XGBoost *(boosters ≈ **0.9034**: XGB 0.903357 ≥ LGBM 0.903355 ≥ HistGB 0.903220 — statistically tied (spread ≤ 0.00014 ≈ 0.08× fold std); RF 0.893315 ≈ LogReg 0.892588; booster gain over linear **+0.0108 = 6× fold std**; boosters ran imputation-free via verified NaN-passthrough; total 25.8 min CV wall; [[EXP-004 random forest]]–[[EXP-007 xgboost]], `results/p4_summary.md`)*
 - ✅ Imbalance: class_weight='balanced' vs SMOTE(fold-internal) vs none — EXP-008..010 *(verdict: **none for AUC** — XGB Δ: class weight −0.00010 / SMOTE −0.00355 / RUS −0.00026; LogReg Δ: +0.00045 / −0.00417 / +0.00018; rationale: ROC-AUC is threshold-free & rank-based, prior-reshaping doesn't improve ranking; [[EXP-008 class weighting]], [[EXP-009 smote]], [[EXP-010 random undersampler]])*
 
-## P5 — Feature selection & hypothesis ◐
-- ☐ Hypothesis note: expected driver blocks (disability, health days, chronic conditions, age)
-- ☐ SelectKBest + RFECV/permutation importance; selected-subset vs all-features — EXP-011..
-- ☐ PCA variant — EXP-0xx
+## P5 — Feature selection & hypothesis ✅ (2026-11-02, Intermediate evidenced)
+- ✅ Hypothesis note: expected driver blocks (disability, health days, chronic conditions, age) *(H1 — five blocks B1–B5 — stated **verbatim** in [[EXP-012 hypothesis H1 subsets]]; verdict **nearly confirmed**: 36/37 cols retain **99.2% of lift** (−0.0033 AUC) but 0/10 folds favour the subset → not strictly within fold noise (~1.9σ))*
+- ✅ SelectKBest + RFECV/permutation importance; selected-subset vs all-features — EXP-011.. *([[EXP-011 selectkbest vs gain importance]]: kbest below all-76 at every k — best k=200 → 0.899670 vs 0.903355, MI∩gain overlap only 3/10 @top-10; adopted fold-internal **gain importances** instead: PHYSHLTH 51.7% of gain, B2 block 55.0%; [[EXP-012 hypothesis H1 subsets]]: H1-subset 0.900051/0.900316 vs baselines, complement standalone 0.811844 but adds only ~+0.003 incrementally; keep all-76)*
+- ✅ PCA variant — EXP-0xx *([[EXP-013 pca]]: n=50/100/200 → 0.881126/0.886203/0.888800, **all ≥0.0146 below all-76**; honest negative — compression smears one-hot structure, forfeits NaN routing)*
 
-## P6 — Tuning & statistics
+## P6 — Tuning & statistics ◐
 - ☐ RandomizedSearchCV on top-2 models (fixed folds) *(acceleration candidate: RUS(0.5) = ~2× faster per fit at −0.0003 AUC — [[EXP-010 random undersampler]]; final config re-validated on full folds)*
 - ☐ Nested CV unbiased estimate
 - ☐ Wilcoxon signed-rank on 10 fold scores, top-2 models

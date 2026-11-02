@@ -83,6 +83,7 @@ if str(_PACKAGE_PARENT) not in sys.path:
 from src.config import (  # noqa: E402
     DATA_INTERIM,
     EXPERIMENTS_LOG,
+    N_SPLITS,
     RANDOM_STATE,
     RESULTS,
     make_folds,
@@ -288,16 +289,70 @@ def load_logged_runs() -> dict[str, dict]:
             if part.startswith("runtime_s="):
                 runtime_s = float(part.split("=", 1)[1])
         runs[exp_id] = {"exp_id": exp_id, "model": str(row["model"]),
+                        "feature_set": str(row["feature_set"]),
+                        "imbalance_strategy": str(row["imbalance_strategy"]),
                         "params": str(row["params"]), "scores": scores,
                         "mean": mean, "std": std, "runtime_s": runtime_s,
                         "notes": str(row["notes"])}
     return runs
 
 
+def log_scored_run(exp_id: str, scores, model_name: str, params_desc: str,
+                   note: str, runtime_s: float, fold_hash: str,
+                   feature_set: str = FEATURE_SET_LABEL,
+                   imbalance_strategy: str = IMBALANCE_STRATEGY_LABEL) -> dict:
+    """Append ONE log row for a run whose fold scores were computed elsewhere.
+
+    Same row construction/printout as ``run_experiment`` (single append path
+    via ``append_log_row``). Needed by P5, where selection/PCA runs use a
+    custom fold loop because the fitted per-fold objects (MI scores, gain
+    importances, explained-variance ratios) must come back from inside each
+    fold - ``cross_val_score`` discards them.
+
+    ``fold_hash`` must be the sha256 of the fold list the scores came from
+    (recorded as a prefix in the notes so cross-run fold identity is
+    auditable).
+    """
+    scores = np.asarray(scores, dtype=float)
+    if scores.shape != (N_SPLITS,):
+        raise AssertionError(
+            f"{exp_id}: expected {N_SPLITS} fold scores, got {scores.shape}")
+    if not np.isfinite(scores).all():
+        raise RuntimeError(f"{exp_id}: non-finite fold score(s): {scores}")
+    mean = float(scores.mean())
+    std = float(scores.std(ddof=0))
+
+    note_parts = [f"runtime_s={runtime_s:.1f}", f"fold_std={std:.6f}",
+                  f"folds_sha256={fold_hash[:12]}"]
+    if note:
+        note_parts.append(note)
+    row = {
+        "exp_id": exp_id,
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "model": model_name,
+        "feature_set": feature_set,
+        "imbalance_strategy": imbalance_strategy,
+        "params": params_desc,
+        **{f"roc_auc_fold{i + 1:02d}": f"{s:.6f}" for i, s in enumerate(scores)},
+        "roc_auc_mean": f"{mean:.6f}",
+        "notes": "; ".join(note_parts),
+    }
+    append_log_row(row)
+
+    print(f"[{exp_id}] {model_name}({params_desc}) feature_set={feature_set}")
+    print(f"[{exp_id}] fold AUCs: " + " ".join(f"{s:.4f}" for s in scores))
+    print(f"[{exp_id}] mean CV ROC-AUC = {mean:.6f} (fold std {std:.6f}) "
+          f"[wall {runtime_s:.1f}s | folds_sha256={fold_hash[:12]}]")
+    return {"exp_id": exp_id, "model": model_name, "params": params_desc,
+            "scores": scores, "mean": mean, "std": std,
+            "runtime_s": runtime_s, "notes": row["notes"]}
+
+
 def run_experiment(exp_id: str, model, model_name: str, params_desc: str,
                    X, y, note: str = "", folds=None, fold_hash: str | None = None,
                    preprocessor=None,
-                   imbalance_strategy: str = IMBALANCE_STRATEGY_LABEL) -> dict:
+                   imbalance_strategy: str = IMBALANCE_STRATEGY_LABEL,
+                   feature_set: str = FEATURE_SET_LABEL) -> dict:
     """One 10-fold CV run on the canonical folds; APPENDS one log row.
 
     Parameters
@@ -318,6 +373,9 @@ def run_experiment(exp_id: str, model, model_name: str, params_desc: str,
                  'none'). P4 passes fold-internal strategy labels such as
                  'SMOTE(0.5)' or 'class_weight=balanced'; the CV folds are
                  unchanged - resampling happens INSIDE fit on train folds.
+    feature_set  label for the feature_set column (default 'all-76'). P5
+                 passes subset/selection labels ('H1-subset', 'kbest-50',
+                 'pca-100', ...); the underlying rows/folds never change.
 
     Returns a result dict (fold scores, mean, std, runtime) for downstream
     summaries - callers never recompute scores.
@@ -344,36 +402,10 @@ def run_experiment(exp_id: str, model, model_name: str, params_desc: str,
                                  scoring="roc_auc", n_jobs=-1,
                                  pre_dispatch="n_jobs")
     runtime_s = time.perf_counter() - t0
-    scores = np.asarray(scores, dtype=float)
-    if not np.isfinite(scores).all():
-        raise RuntimeError(f"{exp_id}: non-finite fold score(s): {scores}")
-    mean = float(scores.mean())
-    std = float(scores.std(ddof=0))
-
-    note_parts = [f"runtime_s={runtime_s:.1f}", f"fold_std={std:.6f}",
-                  f"folds_sha256={computed_hash[:12]}"]
-    if note:
-        note_parts.append(note)
-    row = {
-        "exp_id": exp_id,
-        "timestamp": datetime.now().isoformat(timespec="seconds"),
-        "model": model_name,
-        "feature_set": FEATURE_SET_LABEL,
-        "imbalance_strategy": imbalance_strategy,
-        "params": params_desc,
-        **{f"roc_auc_fold{i + 1:02d}": f"{s:.6f}" for i, s in enumerate(scores)},
-        "roc_auc_mean": f"{mean:.6f}",
-        "notes": "; ".join(note_parts),
-    }
-    append_log_row(row)
-
-    print(f"[{exp_id}] {model_name}({params_desc})")
-    print(f"[{exp_id}] fold AUCs: " + " ".join(f"{s:.4f}" for s in scores))
-    print(f"[{exp_id}] mean CV ROC-AUC = {mean:.6f} (fold std {std:.6f}) "
-          f"[wall {runtime_s:.1f}s | folds_sha256={computed_hash[:12]}]")
-    return {"exp_id": exp_id, "model": model_name, "params": params_desc,
-            "scores": scores, "mean": mean, "std": std,
-            "runtime_s": runtime_s, "notes": row["notes"]}
+    return log_scored_run(exp_id, scores, model_name, params_desc, note,
+                          runtime_s, computed_hash,
+                          feature_set=feature_set,
+                          imbalance_strategy=imbalance_strategy)
 
 
 # ---- diagnostics (NOT experiments, not logged) -----------------------------------

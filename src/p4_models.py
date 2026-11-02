@@ -25,7 +25,7 @@ Boosters (EXP-005..007) use the NaN-PASSTHROUGH preprocessor variant
 (``build_nan_passthrough_preprocessor``). Verified on this codebase with
 sklearn 1.9.1: OneHotEncoder(handle_unknown='ignore') encodes NaN as its
 OWN category (NOM column SOMALE -> categories [1.0, 2.0, 3.0, 4.0, nan],
-5 of 54 NOM columns carry NaN; none are all-NaN in a training fold), and
+51 of 54 NOM columns carry NaN; none are all-NaN in a training fold), and
 ORD/NUM/ENG columns pass through with NaN intact, which HistGB / LGBM /
 XGB route natively at split time. Missingness stays signal instead of
 being blurred by most-frequent imputation - native missing handling is

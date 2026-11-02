@@ -276,7 +276,11 @@ def load_logged_runs() -> dict[str, dict]:
         mean, std = float(scores.mean()), float(scores.std(ddof=0))
         if not np.isfinite(scores).all():
             raise AssertionError(f"{exp_id}: non-finite fold score(s)")
-        if abs(mean - float(row["roc_auc_mean"])) > 5e-7:
+        # Tolerance: roc_auc_mean is the true mean rounded to 6 decimals, so a
+        # legitimate row can differ by exactly 0.5e-6 (e.g. EXP-003l, true mean
+        # 0.6949215 -> logged 0.694922) plus float noise from re-summing the
+        # parsed folds. Only genuinely corrupt/partial rows should fail.
+        if abs(mean - float(row["roc_auc_mean"])) > 5.1e-7:
             raise AssertionError(f"{exp_id}: logged roc_auc_mean != mean(folds)")
         runtime_s = 0.0
         for part in str(row["notes"]).split(";"):
@@ -292,7 +296,8 @@ def load_logged_runs() -> dict[str, dict]:
 
 def run_experiment(exp_id: str, model, model_name: str, params_desc: str,
                    X, y, note: str = "", folds=None, fold_hash: str | None = None,
-                   preprocessor=None) -> dict:
+                   preprocessor=None,
+                   imbalance_strategy: str = IMBALANCE_STRATEGY_LABEL) -> dict:
     """One 10-fold CV run on the canonical folds; APPENDS one log row.
 
     Parameters
@@ -309,6 +314,10 @@ def run_experiment(exp_id: str, model, model_name: str, params_desc: str,
                  every run proves it used the identical fold assignment.
     preprocessor optional pre-built ColumnTransformer (defaults to the shared
                  build_preprocessor()).
+    imbalance_strategy  label for the imbalance_strategy column (default
+                 'none'). P4 passes fold-internal strategy labels such as
+                 'SMOTE(0.5)' or 'class_weight=balanced'; the CV folds are
+                 unchanged - resampling happens INSIDE fit on train folds.
 
     Returns a result dict (fold scores, mean, std, runtime) for downstream
     summaries - callers never recompute scores.
@@ -350,7 +359,7 @@ def run_experiment(exp_id: str, model, model_name: str, params_desc: str,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "model": model_name,
         "feature_set": FEATURE_SET_LABEL,
-        "imbalance_strategy": IMBALANCE_STRATEGY_LABEL,
+        "imbalance_strategy": imbalance_strategy,
         "params": params_desc,
         **{f"roc_auc_fold{i + 1:02d}": f"{s:.6f}" for i, s in enumerate(scores)},
         "roc_auc_mean": f"{mean:.6f}",

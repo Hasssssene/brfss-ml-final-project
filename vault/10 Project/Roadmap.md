@@ -23,17 +23,17 @@ Deadline: **2026-11-08 23:59 (C2)**. Statuses: ☐ todo · ◐ in progress · �
 - ✅ EXP-001 DummyClassifier ROC-AUC baseline (expect 0.5) *(0.500000 exactly on all 10 folds; [[EXP-001 dummy baseline]])*
 - ✅ EXP-002 LogisticRegression, EXP-003 DecisionTree (manual tuning, documented) *(LogReg C=0.01 → **0.892588**; Tree (16, 200) → **0.880206**; identical folds sha `3b3a17457039` across all 17 runs; harness `src/experiments.py` now resume-safe — skips logged exp_ids, re-asserts fold hash; [[EXP-002 logistic regression]], [[EXP-003 decision tree]])*
 
-## P4 — Model zoo + imbalance (Intermediate) ◐
-- ☐ EXP-004 RandomForest, EXP-005 HistGradientBoosting, EXP-006 LightGBM, EXP-007 XGBoost
-- ☐ Imbalance: class_weight='balanced' vs SMOTE(fold-internal) vs none — EXP-008..010
+## P4 — Model zoo + imbalance (Intermediate) ✅ (2026-11-02)
+- ✅ EXP-004 RandomForest, EXP-005 HistGradientBoosting, EXP-006 LightGBM, EXP-007 XGBoost *(boosters ≈ **0.9034**: XGB 0.903357 ≥ LGBM 0.903355 ≥ HistGB 0.903220 — statistically tied (spread ≤ 0.00014 ≈ 0.08× fold std); RF 0.893315 ≈ LogReg 0.892588; booster gain over linear **+0.0108 = 6× fold std**; boosters ran imputation-free via verified NaN-passthrough; total 25.8 min CV wall; [[EXP-004 random forest]]–[[EXP-007 xgboost]], `results/p4_summary.md`)*
+- ✅ Imbalance: class_weight='balanced' vs SMOTE(fold-internal) vs none — EXP-008..010 *(verdict: **none for AUC** — XGB Δ: class weight −0.00010 / SMOTE −0.00355 / RUS −0.00026; LogReg Δ: +0.00045 / −0.00417 / +0.00018; rationale: ROC-AUC is threshold-free & rank-based, prior-reshaping doesn't improve ranking; [[EXP-008 class weighting]], [[EXP-009 smote]], [[EXP-010 random undersampler]])*
 
-## P5 — Feature selection & hypothesis
+## P5 — Feature selection & hypothesis ◐
 - ☐ Hypothesis note: expected driver blocks (disability, health days, chronic conditions, age)
 - ☐ SelectKBest + RFECV/permutation importance; selected-subset vs all-features — EXP-011..
 - ☐ PCA variant — EXP-0xx
 
 ## P6 — Tuning & statistics
-- ☐ RandomizedSearchCV on top-2 models (fixed folds)
+- ☐ RandomizedSearchCV on top-2 models (fixed folds) *(acceleration candidate: RUS(0.5) = ~2× faster per fit at −0.0003 AUC — [[EXP-010 random undersampler]]; final config re-validated on full folds)*
 - ☐ Nested CV unbiased estimate
 - ☐ Wilcoxon signed-rank on 10 fold scores, top-2 models
 

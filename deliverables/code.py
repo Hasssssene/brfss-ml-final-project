@@ -1,93 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""BRFSS 2021 - General Health Status (GENHLTH) Binary Classification
-=====================================================================
+"""BRFSS 2021 -- predict Fair/Poor general health (GENHLTH 4-5 vs 1-3).
 
-Final-model deliverable (single self-contained .py file; no imports from
-the project's src/ package).
+End-to-end pipeline: load raw survey -> whitelist (303 -> 76 columns) ->
+recode sentinels per codebook -> NaN-passthrough pipeline -> tuned
+LightGBM (EXP-014a) -> stratified 10-fold CV: ROC-AUC + confusion matrix.
 
-WHAT IT DOES
-------------
-End-to-end reproduction of this project's FINAL model and its evaluation:
+Every random component is seeded RANDOM_STATE = 42; the only CV splitter
+is StratifiedKFold(10, shuffle=True, random_state=42).
 
-1. Loads the raw BRFSS 2021 LLCP survey (``data/raw/LLCP2021.csv``,
-   438,693 rows x 303 columns) and reduces it to the ADR-005 whitelist of
-   76 columns, recoding codebook missing-value sentinels (7/9, 77/99, 88
-   "none" -> 0 for day counts, 777/999, 7777/9999, ...) to NaN / engineered
-   values exactly as documented in the project's preprocessing phase.
-2. Builds the binary target  y = 1 if GENHLTH in {4,5} (Fair/Poor) else
-   y = 0 (GENHLTH in {1,2,3}); rows with GENHLTH in {7, 9, blank} are
-   dropped (~1,161 rows), never imputed. Final matrix: 437,532 x 76,
-   72,741 positives (16.63% class rate).
-3. Fits the tuned final model - LightGBM (``LGBMClassifier``) with the
-   hyperparameters found by RandomizedSearchCV in the tuning phase
-   (experiment EXP-014a), inside a NaN-passthrough preprocessing pipeline
-   (OneHotEncoder(handle_unknown='ignore') for nominal columns - NaN
-   becomes its own category; ordinal/numeric/engineered columns pass
-   through with NaN intact for LightGBM's native missing-value routing).
-4. Evaluates with stratified 10-fold cross-validation on the CANONICAL
-   project folds - ``StratifiedKFold(n_splits=10, shuffle=True,
-   random_state=42)`` - scoring ROC-AUC per fold, and prints the
-   fold-index sha256 so fold identity with every logged experiment
-   (EXP-001..EXP-015 in ``results/experiments_log.csv``) is verifiable.
-5. Reports per-fold AUCs, mean +/- std, an out-of-fold (OOF) confusion
-   matrix at threshold 0.5, runtimes, and (full mode) writes
-   ``results/final_run_summary.txt`` + ``results/final_run_fold_scores.csv``.
+Usage:
+    python code.py --full    # real run (437,532 rows, ~2 min)
+    python code.py --smoke   # fast check on a 50k stratified subsample
 
-HOW TO RUN
-----------
-    pip install -r requirements.txt      # from the repository root
-    python code.py --full                # default: the real 437,532-row run
-    python code.py --smoke               # fast check: stratified 50k subsample
-
-The script expects the raw data at ``../data/raw/LLCP2021.csv`` relative to
-this file (i.e. ``<repo>/data/raw/LLCP2021.csv``). If it is missing a clear
-error with download instructions is raised. Nothing else is required: no
-parquet checkpoints from the development pipeline are read - cleaning is
-redone from the immutable raw CSV so the deliverable is fully standalone.
-
-EXPECTED RUNTIME (see HARDWARE note)
-------------------------------------
---full   : ~1.5 min total on the development machine (raw-CSV load+clean
-           ~10 s; 10-fold CV of the tuned LightGBM ~70 s). Budget up to
-           ~10 min on slower hardware / fewer cores.
---smoke  : ~20-30 s total (same load; CV on a 50,000-row stratified
-           subsample takes ~10 s).
-
-HARDWARE NOTE
--------------
-Developed and verified on Windows 11 x64, 12 logical CPU cores, 32 GB RAM
-(Python 3.13.7, scikit-learn 1.9.1, lightgbm 4.7.0, pandas 2.3.0,
-numpy 2.2.6). Peak memory ~4-6 GB while pandas parses the raw CSV.
-Cross-validation parallelises across the 10 folds (joblib n_jobs=-1,
-pre_dispatch='n_jobs'); each fold's LightGBM is single-threaded
-(n_jobs=1) - identical to how every logged experiment was produced.
-
-REPRODUCIBILITY CONTRACT
-------------------------
-- The only seed anywhere is RANDOM_STATE = 42.
-- The only CV splitter is StratifiedKFold(n_splits=10, shuffle=True,
-  random_state=42). The sha256 over the 10 (train, test) index arrays
-  (int64 little-endian bytes, order-sensitive - same hash function as the
-  project harness) starts with ``3b3a17457039b258``; the full digest is
-  printed on every run and asserted in --full mode. Every experiment row
-  in results/experiments_log.csv carries this same prefix.
-- On the pinned versions above, the --full fold AUCs reproduce the logged
-  EXP-014a row (mean CV ROC-AUC = 0.904321) to within 1e-6 per fold; the
-  script prints the actual delta per fold. Different library versions may
-  drift in later decimal places (gradient boosting is not bit-stable
-  across library builds); fold identity is still guaranteed by the hash.
-
-TRACEABILITY: final model = EXP-014a in results/experiments_log.csv
-(tuned in the P6 phase from results/p6/best_params.json; unbiased nested-CV
-estimate of the same tuned pipeline: EXP-015, mean 0.904303).
+Expects the raw CSV at <repo>/data/raw/LLCP2021.csv (two levels up).
+Final model traceability: EXP-014a in results/experiments_log.csv.
 """
+
 
 from __future__ import annotations
 
-# =====================================================================
 # [1] CONFIG & CONSTANTS
-# =====================================================================
 import argparse
 import hashlib
 import time
@@ -114,7 +47,7 @@ POSITIVE_CLASSES = (4, 5)               # y = 1 if GENHLTH in {4,5} (Fair/Poor)
 NEGATIVE_CLASSES = (1, 2, 3)            # y = 0 if GENHLTH in {1,2,3}
 TARGET_COL = "GENHLTH"
 
-# ---- paths (relative to this script: deliverables/../...) -------------
+# paths (relative to this script: deliverables/../...)
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parent
 DATA_RAW = ROOT / "data" / "raw" / "LLCP2021.csv"
@@ -122,19 +55,19 @@ RESULTS_DIR = ROOT / "results"
 SUMMARY_TXT = RESULTS_DIR / "final_run_summary.txt"
 FOLD_SCORES_CSV = RESULTS_DIR / "final_run_fold_scores.csv"
 
-# ---- data contracts (asserted after cleaning; mirrors the P2 phase) ---
+# data contracts (asserted after cleaning; mirrors the P2 phase)
 EXPECTED_RAW_ROWS = 438_693             # raw CSV rows
 EXPECTED_N_FEATURES = 76                # ADR-005 whitelist size
 EXPECTED_N_VALID = 437_532              # rows after dropping invalid target
 EXPECTED_N_POS = 72_741                 # positives (16.63% class rate)
 EXPECTED_STATE_NUNIQUE = 53             # 50 states + DC + PR + GU
 
-# ---- canonical fold identity ------------------------------------------
+# canonical fold identity
 # sha256 over the canonical fold index arrays (same hash function as the
 # project harness); first 16 hex chars recorded in every logged run.
 CANONICAL_FOLDS_SHA16 = "3b3a17457039b258"
 
-# ---- the tuned final model (EXP-014a) ----------------------------------
+# the tuned final model (EXP-014a)
 # Verbatim from results/p6/best_params.json ("lgbm" -> "best_params"):
 # winner of RandomizedSearchCV(n_iter=15, inner 5-fold, roc_auc, rs=42).
 TUNED_LGBM_PARAMS = dict(
@@ -157,7 +90,7 @@ LGBM_FIXED_FLAGS = dict(
     subsample_freq=1,
 )
 
-# ---- reference values for the verification check (full mode only) -----
+# reference values for the verification check (full mode only)
 # EXP-014a row of results/experiments_log.csv (values logged at 6 decimals).
 EXP014A_FOLDS = (
     0.904011, 0.905465, 0.905302, 0.903872, 0.905757,
@@ -169,9 +102,7 @@ MATCH_TOL = 1e-6
 SMOKE_N = 50_000                        # --smoke stratified subsample size
 
 
-# =====================================================================
 # [2] WHITELIST + RECODE SPECS  (ported verbatim from src/preprocessing.py)
-# =====================================================================
 # The ADR-005 column whitelist: the 76 kept columns of the 303 in the raw
 # file, each with its encoding and per-column recode contract.
 #   encoding: ORD (ordinal codes, natural order) | NOM (one-hot at train
@@ -345,7 +276,7 @@ VALID_RANGES = {
     "_AGE80": (18, 80),
 }
 
-# ---- recode implementations (verbatim port) ---------------------------
+# recode implementations (verbatim port)
 def _recode_sent(s: pd.Series, codes) -> pd.Series:
     return s.where(~s.isin(list(codes)))
 
@@ -446,10 +377,7 @@ def apply_recode(s: pd.Series, recode: tuple) -> pd.Series:
     return _RECODE_FNS[kind](s.astype(float))
 
 
-# =====================================================================
-# [3] CLEANING  (load -> sentinel recode -> ENG transforms -> valid-target
-#     mask; no randomness anywhere in this path)
-# =====================================================================
+# [3] CLEANING  (load -> sentinel recode -> ENG transforms -> valid-target mask; no randomness anywhere in this path)
 def load_raw() -> pd.DataFrame:
     """Read the immutable raw BRFSS 2021 CSV (one pass)."""
     if not DATA_RAW.exists():
@@ -572,9 +500,7 @@ def sanity_checks(X_all: pd.DataFrame, X: pd.DataFrame,
     return {"n_valid": len(y), "n_pos": n_pos, "rate": rate}
 
 
-# =====================================================================
 # [4] PIPELINE - NaN-passthrough preprocessor (the booster route)
-# =====================================================================
 def column_groups() -> dict:
     """Column groups per encoding, in whitelist order (as in column_meta)."""
     return {
@@ -613,9 +539,7 @@ def build_preprocessor() -> ColumnTransformer:
     )
 
 
-# =====================================================================
 # [5] FINAL MODEL - tuned LightGBM (EXP-014a)
-# =====================================================================
 def build_final_model() -> LGBMClassifier:
     """Tuned LightGBM, hyperparameters verbatim from the tuning phase."""
     return LGBMClassifier(**LGBM_FIXED_FLAGS, **TUNED_LGBM_PARAMS)
@@ -627,9 +551,7 @@ def build_pipeline() -> Pipeline:
                      ("model", build_final_model())])
 
 
-# =====================================================================
 # [6] EVALUATION - stratified 10-fold CV, ROC-AUC, canonical folds
-# =====================================================================
 def make_folds() -> StratifiedKFold:
     """The one and only CV splitter (identical to every logged run)."""
     return StratifiedKFold(n_splits=N_SPLITS, shuffle=True,
@@ -694,9 +616,7 @@ def run_cv(X, y, pipe, folds) -> tuple[np.ndarray, np.ndarray, float]:
     return scores, oof, cv_s
 
 
-# =====================================================================
 # [7] REPORTING
-# =====================================================================
 def build_report(mode: str, X, y, folds, fold_hash, scores, oof, cv_s,
                  clean_s, total_s, audit) -> tuple[list, np.ndarray]:
     """Assemble the console/file report lines + the EXP-014a delta table."""
@@ -831,9 +751,7 @@ def write_outputs(lines, folds, y, scores, deltas) -> None:
     print(f"[report] wrote {FOLD_SCORES_CSV}")
 
 
-# =====================================================================
 # [8] MAIN
-# =====================================================================
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="BRFSS 2021 GENHLTH binary classifier - final model "

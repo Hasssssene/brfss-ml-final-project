@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BRFSS 2021 GENHLTH binary classification — technical report</title>
+<style>
+/* Print CSS for report.pdf — A4, 2cm margins, 11pt serif body, sans headings,
+   zebra tables, centered small figure captions, page-break-before major sections,
+   no orphan headings. Rendered headlessly by Microsoft Edge. */
+
+@page {
+  size: A4;
+  margin: 2cm;
+}
+
+html {
+  font-size: 11pt;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #1a1a1a;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+/* ---------- Headings ---------- */
+h1, h2, h3, h4, h5 {
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  color: #14263a;
+  page-break-after: avoid;          /* no orphan headings */
+  break-after: avoid;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+}
+
+h1 {
+  font-size: 19pt;
+  line-height: 1.25;
+  margin-top: 0;
+}
+
+/* Every numbered section starts on a fresh page (title page holds only h1 + meta). */
+h2 {
+  font-size: 14.5pt;
+  page-break-before: always;
+  break-before: page;
+  border-bottom: 1.5pt solid #14263a;
+  padding-bottom: 0.18em;
+  margin-top: 0;
+}
+
+/* The first section shares the title page rather than forcing a break. */
+h2:first-of-type {
+  page-break-before: avoid;
+  break-before: avoid;
+  margin-top: 1.2em;
+}
+
+h3 {
+  font-size: 12pt;
+  color: #24425f;
+}
+
+h4 {
+  font-size: 11pt;
+  color: #34506b;
+}
+
+/* ---------- Paragraphs & lists ---------- */
+p { margin: 0.4em 0; orphans: 3; widows: 3; }
+
+ul, ol { margin: 0.3em 0 0.3em 1.2em; padding-left: 0.8em; }
+li { margin: 0.1em 0; }
+
+hr { border: none; border-top: 0.75pt solid #b9c2cc; margin: 1.2em 0; }
+
+strong { color: #14263a; }
+
+blockquote {
+  margin: 0.6em 1.2em;
+  padding: 0.5em 0.9em;
+  border-left: 3pt solid #34506b;
+  background: #f2f5f8;
+  font-size: 10.5pt;
+  page-break-inside: avoid;
+}
+
+/* ---------- Code ---------- */
+code, pre {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9pt;
+}
+code {
+  background: #f1f3f5;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+pre {
+  background: #f6f7f9;
+  border: 0.5pt solid #d4dae0;
+  padding: 0.5em 0.8em;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; }
+
+/* ---------- Tables ---------- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.7em 0 0.9em 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 8.4pt;
+  page-break-inside: auto;   /* long tables may split across pages */
+}
+caption {
+  caption-side: top;
+  text-align: left;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 9pt;
+  font-weight: 600;
+  color: #14263a;
+  padding-bottom: 0.25em;
+}
+thead { display: table-header-group; }  /* repeat header row after page split */
+tr { page-break-inside: avoid; break-inside: avoid; }
+th {
+  background: #14263a;
+  color: #ffffff;
+  font-weight: 600;
+  text-align: left;
+  padding: 2.5pt 4pt;
+  border: 0.5pt solid #14263a;
+  vertical-align: bottom;
+}
+td {
+  padding: 2pt 4pt;
+  border: 0.5pt solid #c3ccd5;
+  vertical-align: top;
+}
+tbody tr:nth-child(even) { background: #eef1f5; }  /* zebra rows */
+
+/* ---------- Figures ---------- */
+figure {
+  margin: 0.7em auto;
+  text-align: center;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+figure img {
+  max-width: 100%;
+  max-height: 8.75cm;
+  width: auto;
+  object-fit: contain;
+}
+figcaption {
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 8pt;
+  color: #4a5560;
+  text-align: center;
+  margin-top: 0.3em;
+  line-height: 1.3;
+}
+
+/* ---------- Title metadata block (first ul after h1) ---------- */
+h1 + ul {
+  list-style: none;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 10pt;
+  color: #33414f;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+a { color: #1d4f8a; text-decoration: none; }
+
+</style>
+</head>
+<body>
+<h1 id="predicting-fairpoor-general-health-on-brfss-2021">Predicting Fair/Poor General Health on BRFSS 2021</h1>
+<p><strong>Binary classification · ROC-AUC · stratified 10-fold cross-validation</strong></p>
+<p>Machine Learning — Final Project (C2 call) Author: Hassene Bouamama Date: November 8, 2026</p>
+<blockquote>
+<p><strong>Abstract.</strong> We build a binary classifier on the CDC Behavioral Risk Factor Surveillance System (BRFSS) 2021 landline/cell survey (438,693 respondents, 303 raw columns). The target is self-reported general health: respondents rating their health <em>Fair</em> or <em>Poor</em> (GENHLTH ∈ {4,5}, 16.63% of labeled rows) form the positive class; <em>Excellent/Very good/Good</em> form the negative class. After a leakage audit, a six-rule column triage (303 → 76 columns), per-column sentinel recoding from the codebook, and one-hot encoding, we compare Dummy, Logistic Regression, Decision Tree, Random Forest, and three gradient-boosting implementations under a single fixed 10-fold split, and test class weighting and SMOTE against the class imbalance. The final model is a tuned LightGBM: mean ROC-AUC 0.903672 on the fixed folds (EXP-020), statistically tied with tuned XGBoost, confirmed by nested CV, and explained with SHAP. Every number in this report cites an experiment id traceable to <code>experiments.csv</code>; facts about the data cite the project notebook (<code>notebooks/BRFSS_project.ipynb</code>), which is the single source of truth for methods.</p>
+</blockquote>
+<hr />
+<h2 id="contents">Contents</h2>
+<ol type="1">
+<li>Introduction and goal</li>
+<li>The dataset</li>
+<li>Preprocessing: from 303 columns to a clean matrix</li>
+<li>Exploratory data analysis</li>
+<li>Experimental setup</li>
+<li>Baselines</li>
+<li>Model zoo and imbalance handling</li>
+<li>Feature selection and hypothesis</li>
+<li>Hyperparameter tuning and statistical comparison</li>
+<li>Error analysis and explainability (XAI)</li>
+<li>Conclusions</li>
+<li>Ethics and Use of Generative AI</li>
+</ol>
+<hr />
+<h2 id="introduction-and-goal">1. Introduction and goal</h2>
+<p>BRFSS is the largest continuously running health survey in the world: more than 400,000 adult telephone interviews per year across the 50 US states, the District of Columbia, and three territories, covering risk behaviors, chronic conditions, and use of preventive services. Self-rated general health (GENHLTH) is one of its core items and a strong summary indicator of health status.</p>
+<p><strong>Goal.</strong> Frame the 5-class GENHLTH item as a binary problem and predict the minority side well:</p>
+<ul>
+<li><strong>y = 1</strong> if GENHLTH ∈ {4, 5} (<em>Fair</em> / <em>Poor</em>) — the “needs attention” group,</li>
+<li><strong>y = 0</strong> if GENHLTH ∈ {1, 2, 3} (<em>Excellent</em> / <em>Very good</em> / <em>Good</em>).</li>
+</ul>
+<p>We deliberately chose this direction of the binary split (rather than, say, Excellent vs rest) because Fair/Poor identifies respondents with the greatest health burden, which is the operationally interesting group, and because it produces a realistic ~1:5 imbalance that the project asks us to handle explicitly.</p>
+<p><strong>Metric.</strong> ROC-AUC, estimated with stratified 10-fold cross-validation on one fixed set of folds shared by every model (Section 5). AUC is threshold-free, which matters twice here: the classes are imbalanced (~16.6% positive), and the natural use of the score is to <em>rank</em> respondents, not to hard-classify them.</p>
+<p><strong>Deliverables.</strong> A single reproducible notebook (exported to <code>code.py</code>), this report, and a screencast. The unifying principle for the whole project: <em>every number in the report traces back to a logged experiment, and every preprocessing decision to a written rule with evidence.</em></p>
+<hr />
+<h2 id="the-dataset">2. The dataset</h2>
+<p><strong>Source.</strong> BRFSS 2021 LLCP public file (<code>LLCP2021.csv</code>), obtained via the course server; column semantics from the official 2021 codebook (local copy in <code>docs/codebook.pdf</code>).</p>
+<p><strong>Shape and types</strong> (notebook §1.1–1.2):</p>
+<ul>
+<li>438,693 rows × 303 raw columns.</li>
+<li>245 columns arrive as <code>float64</code> and 58 as <code>int64</code>; the float columns are whole-number codes that became floats because they contain blanks. 3 columns are 100% empty.</li>
+<li>20 columns have ≤ 2 distinct values (including blanks); 153 columns are &gt;50% blank; 91 are &gt;90% blank.</li>
+</ul>
+<p>The column universe has three layers: raw questionnaire items (asked to respondents), CDC-computed columns (prefixed <code>_</code>, derived <em>after</em> the interview — prime leakage suspects), and administrative/survey-plumbing columns (weights, strata, interview metadata).</p>
+<p><strong>Target definition and class distribution</strong> (notebook §1.3). GENHLTH has five real answer categories plus sentinels. Rows with target = 7 (<em>don’t know</em>, 788 rows), 9 (<em>refused</em>, 369 rows), or blank (4 rows) — 1,161 rows, 0.26% — are <strong>dropped, never imputed</strong>: a guessed label is a wrong label, and the target must never be imputed. That leaves <strong>437,532 labeled rows</strong>.</p>
+<p>Table 1 — GENHLTH distribution over labeled rows (notebook §1.3).</p>
+<table>
+<thead>
+<tr>
+<th>GENHLTH</th>
+<th>Meaning</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">% of labeled rows</th>
+<th>Binary y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Excellent</td>
+<td style="text-align: right;">77,741</td>
+<td style="text-align: right;">17.8%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Very good</td>
+<td style="text-align: right;">149,112</td>
+<td style="text-align: right;">34.1%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Good</td>
+<td style="text-align: right;">137,938</td>
+<td style="text-align: right;">31.5%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Fair</td>
+<td style="text-align: right;">54,736</td>
+<td style="text-align: right;">12.5%</td>
+<td>1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Poor</td>
+<td style="text-align: right;">18,005</td>
+<td style="text-align: right;">4.1%</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Total labeled</strong></td>
+<td></td>
+<td style="text-align: right;"><strong>437,532</strong></td>
+<td style="text-align: right;">100%</td>
+<td></td>
+</tr>
+<tr>
+<td>7 / 9 / blank</td>
+<td>DK / refused / missing</td>
+<td style="text-align: right;">1,161</td>
+<td style="text-align: right;">(dropped)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>The positive class is <strong>72,741 respondents = 16.63%</strong> — roughly 1 in 6. A model that predicts the majority class for everyone would already be ~83.4% accurate and completely useless, which is the first reason we score with ROC-AUC instead of accuracy (the second reason is in Section 5).</p>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig01_target_imbalance.png" alt="Target imbalance" />
+<figcaption aria-hidden="true">Target imbalance</figcaption>
+</figure>
+<p><em>Figure 1: GENHLTH raw answer distribution, colored by the binary side. Fair/Poor = 16.63% of labeled rows (notebook §2.4).</em></p>
+<p><strong>What makes this dataset challenging</strong> (and what the rest of the report does about it): hundreds of mostly categorical columns needing deliberate encoding; pervasive but <em>structured</em> missingness (Section 4.1); class imbalance (Sections 5–7); and several columns so strongly related to the target that using them would be leakage, not learning (Sections 3.1, 4.2, 4.3).</p>
+<hr />
+<h2 id="preprocessing-from-303-columns-to-a-clean-matrix">3. Preprocessing: from 303 columns to a clean matrix</h2>
+<p>Our preprocessing has five stages: (1) a leakage hunt, (2) a six-rule column triage that derives a 76-column whitelist, (3) per-column sentinel recoding, (4) engineered recodes for day-counts and frequency codes, (5) one-hot encoding of nominal columns into a design matrix. The empirical evidence behind the triage rules is presented in Section 4; here we state the decisions.</p>
+<h3 id="leakage-blacklist">3.1 Leakage blacklist</h3>
+<p>Four columns must never appear as features (notebook §2.1, §3 R1):</p>
+<ul>
+<li><code>GENHLTH</code> — the target itself;</li>
+<li><code>_RFHLTH</code> — the CDC-computed “good-or-better health” flag. It is derived <em>from</em> GENHLTH; empirically it agrees with our binary target on <strong>100.00% of the 437,532 labeled rows</strong> (Section 4.3). Training on it would be grading the model on a copy of the answer key;</li>
+<li><code>_PHYS14D</code>, <code>_MENT14D</code> — CDC bins of the raw <code>PHYSHLTH</code>/<code>MENTHLTH</code> day counts. We keep the raw columns and drop the derived bins.</li>
+</ul>
+<p>This blacklist is enforced twice: as triage rule 1 and as an assertion before the design matrix is built (Section 3.4).</p>
+<h3 id="column-triage-six-rules-one-verdict-per-column">3.2 Column triage: six rules, one verdict per column</h3>
+<p>Every one of the 303 columns receives exactly one verdict by first-match (notebook §3). Rules are applied in order; a column already dropped by an earlier rule is never reconsidered.</p>
+<p>Table 2 — The triage funnel (notebook §3.1; full 303-row record in <code>data/interim/triage_own.csv</code>).</p>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 18%" />
+<col style="width: 18%" />
+<col style="width: 25%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Rule</th>
+<th>Verdict</th>
+<th style="text-align: right;">Columns</th>
+<th>How decided</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>—</td>
+<td>(survivors)</td>
+<td>KEEP</td>
+<td style="text-align: right;"><strong>76</strong></td>
+<td>everything not matched below</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Leakage</td>
+<td>LEAK</td>
+<td style="text-align: right;">4</td>
+<td>empirical: <code>_RFHLTH</code> 100% agreement with y; <code>_PHYS14D</code>/<code>_MENT14D</code> are bins of raw day counts (§4.3)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Admin / interview-mode plumbing</td>
+<td>ADMIN</td>
+<td style="text-align: right;">35</td>
+<td>explicit list with codebook reasons: interview dates, IDs, sampling weights/strata, landline/cell intro-flow</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Constant</td>
+<td>CONSTANT</td>
+<td style="text-align: right;">11</td>
+<td>computed: ≤ 1 distinct non-blank value</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Sparse</td>
+<td>SPARSE</td>
+<td style="text-align: right;">85</td>
+<td>computed: &gt; 90% blank</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Low coverage</td>
+<td>LOW-COVERAGE</td>
+<td style="text-align: right;">27</td>
+<td>computed: &gt; 75% blank (23 cols) + 4 documented exceptions where plain blank% overstates true usable coverage (<code>HIVTSTD3</code>, <code>PDIABTST</code>, <code>_CHISPNC</code>, <code>LASTSMK2</code>)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Duplicate of a kept column</td>
+<td>DUPLICATE</td>
+<td style="text-align: right;">65</td>
+<td>21 codebook families (e.g. raw item vs CDC-computed twin); spot-verified with crosstabs and rank correlations (§4.2)</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Total</strong></td>
+<td></td>
+<td style="text-align: right;"><strong>303</strong></td>
+<td>76 kept + 227 dropped</td>
+</tr>
+</tbody>
+</table>
+<p>Three decisions inside this funnel deserve justification:</p>
+<ul>
+<li><strong>The 25% coverage floor (rule 5).</strong> Below ~25% effective coverage, imputing the missing 75%+ stops being statistics and becomes invention. We kept the boundary honest rather than aggressive: <code>SOMALE</code> (74.0% blank) and <code>PREDIAB1</code> (73.9% blank) stay because their effective coverage is at/above 25%, while genuinely sentinel-eaten columns like <code>HIVTSTD3</code> (777777/999999 sentinels cut true coverage to ~20%) go.</li>
+<li><strong>Duplicates: keep the raw, drop the computed twin.</strong> Where a CDC column is a deterministic recode of a raw item (example in §4.2), keeping both adds no information, inflates dimensionality, and double-counts one question in distance/regularization terms. We prefer the raw item, with one exception: <code>_SMOKER3</code> (4-level ordinal) is kept over its raw pair because its ordinal coding compresses <code>SMOKE100</code>+<code>SMOKDAY2</code> without information loss.</li>
+<li><strong>Keep-list, not drop-list.</strong> The design matrix is built <em>by whitelist</em>, not by dropping. A typo in a keep-list loses a column (harmless, and caught by assertions); a typo in a drop-list leaks the target (silent corruption). The whitelist is the <em>output</em> of this section, never an input.</li>
+</ul>
+<p><strong>Independent verification.</strong> The funnel’s keep-set was cross-checked against a triage of the same data performed earlier and independently by a different pass: <strong>keep-set match = True (76 shared, 0 only-ours, 0 only-v1)</strong> (notebook §3, verification cell). The independent record is used <em>only</em> as a final cross-check, never as an input to the rules.</p>
+<p>Table 3 — The 76 survivors by role (notebook §3.1).</p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 40%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th style="text-align: right;">n</th>
+<th>Meaning / handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ORD</td>
+<td style="text-align: right;">4</td>
+<td>ordinal codes kept as-is (<code>EDUCA</code>, <code>INCOME3</code>, <code>_SMOKER3</code>, <code>CHECKUP1</code>)</td>
+</tr>
+<tr>
+<td>NUM</td>
+<td style="text-align: right;">3</td>
+<td>true quantities kept as-is (<code>_AGE80</code>, <code>JOINPAI2</code>, <code>MAXDRNKS</code>)</td>
+</tr>
+<tr>
+<td>ENG</td>
+<td style="text-align: right;">15</td>
+<td>engineered: sentinel/none/frequency recodes to real quantities (e.g. <code>PHYSHLTH</code>, <code>MENTHLTH</code>, <code>_BMI5</code>, alcohol &amp; fruit/veg frequencies, <code>CHILDREN</code>)</td>
+</tr>
+<tr>
+<td>NOM</td>
+<td style="text-align: right;">54</td>
+<td>nominal → one-hot (chronic conditions, functioning limitations, access-to-care, demographics, prevention, state/urbanicity, …)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sentinel-recoding-per-column-never-by-pattern">3.3 Sentinel recoding — per column, never by pattern</h3>
+<p>BRFSS uses sentinel codes for <em>don’t know</em> / <em>refused</em>, but <strong>which codes are sentinels is a per-column fact, not a global pattern</strong>. The textbook trap: <code>EMPLOY1</code> code 7 means <em>Retired</em> (~131k valid answers) — recoding all 7s to NaN would erase a real category; in <code>INCOME3</code>/<code>PRIMINSR</code>/<code>IMFVPLA2</code> the single 7/9 are real answers while 77/99 are the sentinels; in <code>JOINPAI2</code> (pain 0–10) 7/9 are real ratings; and in day-count questions <strong>88 means “none” — i.e. 0, real data</strong>, not missing (§4.4).</p>
+<p>We therefore built an explicit per-column dictionary from the codebook (notebook §4) and applied it to <strong>56 columns</strong>:</p>
+<p>Table 4 — Sentinel recode scheme (notebook §4).</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Columns</th>
+<th>Codes → NaN</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>45 yes/no &amp; ordinal items (<code>DIABETE4</code>, <code>CVDINFR4</code>, …, <code>CHECKUP1</code>)</td>
+<td>7 (DK), 9 (refused)</td>
+<td>standard two-option sentinels</td>
+</tr>
+<tr>
+<td><code>EMPLOY1</code>, <code>MARITAL</code>, <code>_RACE</code>, <code>EDUCA</code>, <code>_SMOKER3</code></td>
+<td>9 only</td>
+<td>7 is a <strong>real</strong> answer here</td>
+</tr>
+<tr>
+<td><code>INCOME3</code>, <code>PRIMINSR</code>, <code>IMFVPLA2</code>, <code>JOINPAI2</code>, <code>MAXDRNKS</code></td>
+<td>77, 99</td>
+<td>two-digit sentinels; single 7/9 are real answers</td>
+</tr>
+<tr>
+<td><code>FLSHTMY3</code></td>
+<td>999999</td>
+<td>six-digit sentinel</td>
+</tr>
+</tbody>
+</table>
+<h3 id="engineered-recodes-and-sanity-gates">3.4 Engineered recodes and sanity gates</h3>
+<p><strong>Engineered recodes</strong> (role ENG, notebook §4.1):</p>
+<ul>
+<li>Day counts (<code>PHYSHLTH</code>, <code>MENTHLTH</code>, <code>POORHLTH</code>) and “none”-coded counts (<code>AVEDRNK3</code>, <code>DRNK3GE5</code>, <code>MARIJAN1</code>, <code>CHILDREN</code>): <strong>88 → 0</strong> (“none” = zero), 77/99 → NaN.</li>
+<li><code>_BMI5</code> is stored ×100 → divided by 100.</li>
+<li>Frequency-coded questions are decoded to a common unit, <strong>times per month</strong>: for the six fruit/vegetable items, codes 101–199 mean N-times-per-day (× 30.4), 201–299 N-per-week (× 4.33), 300/555 (“less than once a month”/“never”) → 0; <code>ALCDAY5</code> uses the same scheme for drinking-days (weekly × 4.33, monthly as-is, 888 → 0). “Twice a week” and “eight times a month” become comparable numbers.</li>
+</ul>
+<p><strong>No imputation at this stage — by design.</strong> A column median is a statistic estimated from data; computing it before splitting would leak test-fold information into training. So the checkpoint keeps NaN, and imputation happens <em>inside</em> each CV pipeline, fitted on training folds only (Section 5.2). The gradient boosters used later even accept NaN natively, letting missingness itself be signal.</p>
+<p><strong>Sanity gates</strong> (assertions, notebook §4.2) — if one fires you fix the recode, not the check: the leakage blacklist is absent; exactly 76 columns; <code>PHYSHLTH</code>/<code>MENTHLTH</code> ≤ 30; BMI ∈ (10, 100); <code>EDUCA</code> ⊆ {1..6}; <code>CHECKUP1</code> ⊆ {1,2,3,4,8}; <code>_SMOKER3</code> ⊆ {1..4}. All gates pass. The cleaned matrix <strong>X: 437,532 × 76</strong> and target are checkpointed to parquet with an exact round-trip check, so no later stage ever re-cleans the raw CSV (notebook §4, checkpoint cell). Post-cleaning missingness is 22.26% overall (structure analyzed in §4.1).</p>
+<h3 id="encoding-the-design-matrix">3.5 Encoding: the design matrix</h3>
+<p>The 54 NOM columns are one-hot encoded with <strong>explicit <code>_nan</code> indicator columns</strong> (<code>pd.get_dummies(..., dummy_nan=True)</code>): missingness in a nominal item is often informative (a question was skipped because of skip logic, §4.1), so it gets its own level rather than being imputed away. Ordinal codes stay ordinal; numeric/engineered columns stay numeric. 76 columns → <strong>322 columns</strong> (notebook §5.1).</p>
+<p>One-hot encoding is done once, <em>outside</em> CV. This is safe because it is a per-row relabeling — no statistics are estimated, so there is nothing to leak. Imputation and scaling are different: they estimate from data, so they live inside the CV pipelines fitted on training folds only. This inside/outside distinction is our leak-safety rule for representation.</p>
+<hr />
+<h2 id="exploratory-data-analysis">4. Exploratory data analysis</h2>
+<h3 id="missingness-is-structured-not-random">4.1 Missingness is structured, not random</h3>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig02_missingness_top30.png" alt="Missingness" />
+<figcaption aria-hidden="true">Missingness</figcaption>
+</figure>
+<p><em>Figure 2: Top 30 raw columns by % no-answer; the red line marks 50% (notebook §2).</em></p>
+<p>High missingness in BRFSS is dominated by <em>design</em>, not non-response: modules are asked only of a module’s respondents or only in some states; skip logic hides follow-ups (e.g. <code>LASTSMK2</code> is asked only of former smokers); demographic blocks like <code>SOMALE</code>/<code>SOFEMALE</code> apply to subsets of respondents. This is why triage rule 4/5 tolerates <em>documented</em> low coverage down to 25% but no further, and why nominal missingness is encoded as its own level (§3.5).</p>
+<p>After triage and recoding, overall missingness in X is <strong>22.26%</strong>, concentrated in module-gated items: <code>SOMALE</code> 74.8%, <code>PREDIAB1</code> 74.0%, <code>HOMBPCHK</code> 71.5%, <code>HOMRGCHK</code> 71.4%, <code>SOFEMALE</code> 71.1%, <code>MARIJAN1</code> 69.0%, <code>CRGVEXPT</code> 68.6%, <code>ARTHDIS2</code> 68.3% (notebook §4.2).</p>
+<h3 id="duplicates-the-evidence-behind-rule-6">4.2 Duplicates: the evidence behind rule 6</h3>
+<p>Crosstabs expose deterministic twins instantly — the diagonal means “same information”:</p>
+<ul>
+<li><code>EXERANY2</code> vs <code>_TOTINDA</code> (any exercise vs CDC exercise category): a perfect diagonal — EXERANY2=1 (yes) is always <code>_TOTINDA</code>=1, no=2, and only the sentinels (7/9) map to <code>_TOTINDA</code>=9 (notebook §2.2).</li>
+<li><code>HAVARTH5</code> vs <code>_DRDXAR3</code> (arthritis ever vs CDC arthritis flag): perfect diagonal, 142,541 vs 293,256.</li>
+<li><code>_BMI5CAT</code> is a binning of continuous <code>_BMI5</code>: group ranges are exactly 12.00–18.49, 18.50–24.99, 25.00–29.99, 30.00–99.33 (BMI after ÷100).</li>
+</ul>
+<p>For the 21 duplicate families we spot-checked rank correlations (notebook §3, verification cell):</p>
+<p>Table 5 — Spearman ρ between computed twins and their kept raw columns.</p>
+<table>
+<thead>
+<tr>
+<th>Pair (computed vs kept)</th>
+<th style="text-align: right;">ρ</th>
+<th>Pair (computed vs kept)</th>
+<th style="text-align: right;">ρ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_EDUCAG</code> vs <code>EDUCA</code></td>
+<td style="text-align: right;">+1.000</td>
+<td><code>_AGEG5YR</code> vs <code>_AGE80</code></td>
+<td style="text-align: right;">+0.958</td>
+</tr>
+<tr>
+<td><code>_INCOMG1</code> vs <code>INCOME3</code></td>
+<td style="text-align: right;">+0.990</td>
+<td><code>_RFHYPE6</code> vs <code>BPHIGH6</code></td>
+<td style="text-align: right;">−0.951</td>
+</tr>
+<tr>
+<td><code>_SEX</code> vs <code>SEXVAR</code></td>
+<td style="text-align: right;">+0.998</td>
+<td><code>_BMI5CAT</code> vs <code>_BMI5</code></td>
+<td style="text-align: right;">+0.945</td>
+</tr>
+<tr>
+<td><code>WTKG3</code> vs <code>WEIGHT2</code></td>
+<td style="text-align: right;">+0.991</td>
+<td><code>_CHLDCNT</code> vs <code>CHILDREN</code></td>
+<td style="text-align: right;">−0.847</td>
+</tr>
+<tr>
+<td><code>HTM4</code> vs <code>HEIGHT3</code></td>
+<td style="text-align: right;">+0.981</td>
+<td><code>_RFSMOK3</code> vs <code>_SMOKER3</code></td>
+<td style="text-align: right;">−0.207</td>
+</tr>
+</tbody>
+</table>
+<p>Most pairs show |ρ| ≥ 0.94. The two exceptions are <em>many-to-one recodes</em>, not independent information: <code>_CHLDCNT</code> collapses the raw child count into categories, and <code>_RFSMOK3</code> collapses the 4-level <code>_SMOKER3</code> into a current-smoker flag — the crosstabs confirm exact deterministic mappings (as with <code>EXERANY2</code>/<code>_TOTINDA</code>). Dropping the twin loses nothing.</p>
+<h3 id="association-derivation-the-leakage-test">4.3 Association ≠ derivation (the leakage test)</h3>
+<p>The decisive question for each strongly target-related column: does it merely <em>correlate</em> with health, or is it <em>derived from</em> the target?</p>
+<ul>
+<li><code>_RFHLTH</code> vs y: <strong>100.00% agreement on 437,532 rows</strong> — pure derivation → leakage → dropped.</li>
+<li><code>PHYSHLTH</code> (days of poor physical health) vs y: <strong>Spearman ρ = +0.450</strong> (n = 428,365; 88→0, 77/99→NaN recodes applied) — strongly associated but far from deterministic → a legitimate predictor. Same reasoning keeps <code>MENTHLTH</code> and <code>POORHLTH</code>.</li>
+</ul>
+<p>This single distinction — <em>association is what a predictor is; derivation is what a leak is</em> — drives both the blacklist (§3.1) and our confidence in keeping the health-status day counts.</p>
+<h3 id="sentinel-magnitudes-why-naive-recoding-would-be-catastrophic">4.4 Sentinel magnitudes (why naive recoding would be catastrophic)</h3>
+<p><code>PHYSHLTH</code> value counts (notebook §2.4): <strong>88 (“none”) = 287,796 respondents</strong> — by far the most common answer; 30 days = 29,732; 2 days = 22,220; 1 day = 17,063; 3 = 12,868; 5 = 11,642; 10 = 8,595; <strong>77 (DK) = 7,898</strong>. Treating 88 as missing would destroy the signal in the column (turning two thirds of respondents into NaN); treating 77 as a count of 77 days would inject absurd values worse than any outlier. Both failure modes are avoided only by per-column codebook recodes (§3.3).</p>
+<hr />
+<h2 id="experimental-setup">5. Experimental setup</h2>
+<h3 id="one-splitter-one-seed-every-model">5.1 One splitter, one seed, every model</h3>
+<p>Every experiment in this report is scored by the <strong>same</strong> 10-fold split:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>StratifiedKFold(n_splits<span class="op">=</span><span class="dv">10</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>RANDOM_STATE <span class="op">=</span> <span class="dv">42</span>   <span class="co"># everywhere, no other seed in the project</span></span></code></pre></div>
+<p>With 437,532 labeled rows: each fold trains on 393,778–393,779 rows and tests on 43,753–43,754; the test-fold positive rate is 16.62–16.63% in every fold vs 16.63% overall (notebook §1.4). Sharing folds across models is not a convenience — it is what makes score differences attributable to <em>models</em>, not split luck, and what makes the paired Wilcoxon test in Section 9 coherent.</p>
+<h3 id="metric-roc-auc">5.2 Metric: ROC-AUC</h3>
+<p>AUC is the probability that a randomly chosen Fair/Poor respondent receives a higher score than a randomly chosen Good+ respondent (verified by brute force on a toy example against <code>sklearn</code> in notebook §1.5). 1.0 = perfect ranking, 0.5 = chance, 0.0 = perfectly wrong. Being threshold-free, it is immune to the 1-in-6 imbalance that makes accuracy unreadable (§2), and it matches the ranking use-case of a screening score.</p>
+<h3 id="pipelines-statistics-live-inside-cv">5.3 Pipelines: statistics live inside CV</h3>
+<p>Per model, everything that <em>estimates from data</em> — median imputation, standardization, SMOTE resampling — is wrapped in a scikit-learn <code>Pipeline</code> (or <code>imblearn</code> pipeline, Section 7.2) and fitted on training folds only. Models that accept NaN natively (HistGB, LightGBM, XGBoost) skip the imputer entirely. The fixed per-row transformations (one-hot, sentinel recodes) were applied once outside CV (§3.5) because they estimate nothing.</p>
+<h3 id="the-experiment-log">5.4 The experiment log</h3>
+<p><code>experiments.csv</code> — the canonical experiment log for this project — is append-only: one row per run with <code>exp_id</code>, timestamp, model, parameters, the ten fold AUCs, and their mean and standard deviation (notebook §5.1, <code>run_cv</code>). <strong>Every model number in this report cites its EXP id.</strong> The baseline block (EXP-001..007) was executed three times over the course of development: three independent re-runs produced <strong>bit-identical fold scores</strong> (the duplicate rows this created were later removed from the log; since the values matched exactly, nothing changed). That is our determinism evidence — reproducibility demonstrated, not assumed — that the seed and splitter discipline actually hold.</p>
+<hr />
+<h2 id="baselines">6. Baselines</h2>
+<p>We start with three deliberately simple models: a floor, a linear model, and a single tree (notebook §5). All use the full 322-column design matrix, the canonical folds, and median imputation inside the pipeline (plus standardization for the linear model).</p>
+<p>Table 6 — Baselines, ROC-AUC over the fixed 10 folds (source: <code>experiments.csv</code>).</p>
+<table>
+<thead>
+<tr>
+<th>EXP</th>
+<th>Model</th>
+<th>Params</th>
+<th style="text-align: right;">Mean AUC</th>
+<th style="text-align: right;">Std (10 folds)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EXP-001</td>
+<td>Dummy (most frequent)</td>
+<td>—</td>
+<td style="text-align: right;">0.500000</td>
+<td style="text-align: right;">0.000000</td>
+</tr>
+<tr>
+<td>EXP-002</td>
+<td>LogReg</td>
+<td>C=1.0</td>
+<td style="text-align: right;">0.893493</td>
+<td style="text-align: right;">0.001453</td>
+</tr>
+<tr>
+<td>EXP-003</td>
+<td>LogReg</td>
+<td>C=0.1</td>
+<td style="text-align: right;">0.893491</td>
+<td style="text-align: right;">0.001454</td>
+</tr>
+<tr>
+<td>EXP-004</td>
+<td>LogReg</td>
+<td>C=0.01</td>
+<td style="text-align: right;">0.893499</td>
+<td style="text-align: right;">0.001453</td>
+</tr>
+<tr>
+<td>EXP-005</td>
+<td>DecisionTree</td>
+<td>default (no limits)</td>
+<td style="text-align: right;">0.697632</td>
+<td style="text-align: right;">0.002584</td>
+</tr>
+<tr>
+<td>EXP-006</td>
+<td>DecisionTree</td>
+<td>depth=8, leaf=200</td>
+<td style="text-align: right;">0.865083</td>
+<td style="text-align: right;">0.002309</td>
+</tr>
+<tr>
+<td>EXP-007</td>
+<td>DecisionTree</td>
+<td>depth=16, leaf=200</td>
+<td style="text-align: right;">0.881321</td>
+<td style="text-align: right;">0.001882</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig03_baselines.png" alt="Baselines" />
+<figcaption aria-hidden="true">Baselines</figcaption>
+</figure>
+<p><em>Figure 3: Baseline comparison, mean ± std over the 10 fixed folds (notebook §5.4; data: EXP-001..007).</em></p>
+<p><strong>Reading the table.</strong></p>
+<ul>
+<li><strong>Dummy = 0.500000 exactly</strong> — the sanity floor holds (AUC of a constant predictor is chance by construction).</li>
+<li><strong>Logistic regression reaches 0.8935.</strong> A linear model on coded + one-hot features already captures most of the signal, which tells us the signal is largely <em>additive</em> across survey items. The C grid is flat: C = 1.0 / 0.1 / 0.01 score 0.893493 / 0.893491 / 0.893499 (EXP-002..004) — a total spread of 0.000008, three orders of magnitude below the fold spread (~0.0015). With ~394k training rows against 322 features, L2 regularization has nothing to bite on at this scale; we keep C = 0.01 for the rest of the report but claim no tuning win here — this is insensitivity, not optimization.</li>
+<li><strong>A single unpruned tree collapses to 0.6976</strong> (EXP-005): it memorizes the training folds and fails to rank on held-out data. Manually limiting it (depth 8 → 0.8651, depth 16 → 0.8813) recovers most of the gap — capacity control, not tree-ness, was the problem — but even the best single tree stays 0.012 below the linear model (EXP-007 vs EXP-004).</li>
+</ul>
+<p>Takeaway: ranking quality is high already for a linear model, single trees need pruning, and the interesting question for the model zoo is whether <em>ensembles</em> buy more than the +0.010 a linear model leaves on the table.</p>
+<hr />
+<h2 id="model-zoo-and-imbalance-handling">7. Model zoo and imbalance handling</h2>
+<h3 id="four-ensembles">7.1 Four ensembles</h3>
+<p>We add bagging and boosting to exceed the rubric’s five-classifier requirement (notebook §6): Random Forest (300 trees, <code>min_samples_leaf=20</code>, median-imputed input), and three gradient boosters which accept NaN natively — scikit-learn HistGB (300 iterations, lr 0.05), LightGBM (500 trees, lr 0.05, 63 leaves), and XGBoost (500 trees, lr 0.05, depth 6).</p>
+<p>Table 7 — Model zoo and imbalance variants, ROC-AUC over the fixed 10 folds (source: <code>experiments.csv</code>).</p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 23%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>EXP</th>
+<th>Model</th>
+<th>Params</th>
+<th style="text-align: right;">Mean AUC</th>
+<th style="text-align: right;">Std</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EXP-008</td>
+<td>RandomForest</td>
+<td>trees=300, leaf=20</td>
+<td style="text-align: right;">0.895174</td>
+<td style="text-align: right;">0.001604</td>
+</tr>
+<tr>
+<td>EXP-009</td>
+<td>HistGB</td>
+<td>iter=300, lr=0.05</td>
+<td style="text-align: right;">0.903300</td>
+<td style="text-align: right;">0.001764</td>
+</tr>
+<tr>
+<td>EXP-010</td>
+<td>LightGBM</td>
+<td>trees=500, lr=0.05</td>
+<td style="text-align: right;">0.903330</td>
+<td style="text-align: right;">0.001782</td>
+</tr>
+<tr>
+<td>EXP-011</td>
+<td>XGBoost</td>
+<td>trees=500, lr=0.05, depth=6</td>
+<td style="text-align: right;"><strong>0.903449</strong></td>
+<td style="text-align: right;">0.001764</td>
+</tr>
+<tr>
+<td>EXP-012</td>
+<td>LogReg + class weights</td>
+<td>C=0.01, balanced</td>
+<td style="text-align: right;">0.893976</td>
+<td style="text-align: right;">0.001448</td>
+</tr>
+<tr>
+<td>EXP-013</td>
+<td>LightGBM + class weights</td>
+<td>balanced</td>
+<td style="text-align: right;">0.903091</td>
+<td style="text-align: right;">0.001735</td>
+</tr>
+<tr>
+<td>EXP-014</td>
+<td>LogReg + SMOTE</td>
+<td>SMOTE 0.5, C=0.01</td>
+<td style="text-align: right;">0.889475</td>
+<td style="text-align: right;">0.001468</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig04_model_zoo.png" alt="Model zoo" />
+<figcaption aria-hidden="true">Model zoo</figcaption>
+</figure>
+<p><em>Figure 4: Model zoo and imbalance variants, mean ± std over the 10 fixed folds (notebook §6; data: EXP-008..014).</em></p>
+<p><strong>Reading the table (zoo rows).</strong></p>
+<ul>
+<li><strong>Boosting beats linear by almost exactly +0.010</strong>: the three boosters land at 0.9033–0.9034 vs LogReg’s 0.8935 (EXP-009/010/011 vs EXP-004). The gap between the three boosters is ≤ 0.00015 — negligible — so at these default-ish settings the implementation does not matter, the <em>algorithm family</em> does.</li>
+<li><strong>Random Forest (0.8952, EXP-008) adds only +0.0017 over LogReg.</strong> Averaging deep trees (bagging) reduces variance but does not sequentially focus on residual errors; boosting does, and the difference is visible.</li>
+<li><strong>Both leading boosters advance to tuning.</strong> XGBoost is nominally best (0.903449, EXP-011) but sits only 0.00012 above LightGBM — noise at a fold std of ~0.0018 — so both families are tuned in Section 9. The final model is chosen there (a tuned LightGBM, on speed at equal score), and it is the subject of the error analysis in Section 10.</li>
+</ul>
+<h3 id="imbalance-a-stated-hypothesis-then-a-test">7.2 Imbalance: a stated hypothesis, then a test</h3>
+<p>Before running anything we wrote the hypothesis down (notebook §6.2): <strong>neither class weighting nor SMOTE will materially change AUC</strong>, because AUC is rank-based — reshaping class priors moves where the best <em>threshold</em> sits, not how well scores <em>order</em> respondents.</p>
+<p>Method notes. <code>class_weight='balanced'</code> reweights the loss toward the minority class. SMOTE synthesizes minority examples by interpolation; it requires complete input (no NaN) and, critically, is wrapped in an <code>imblearn</code> Pipeline so it oversamples <strong>training folds only</strong> — applying SMOTE before splitting would leak synthetic near-copies of test rows into training, inflating the score.</p>
+<p><strong>Result.</strong> Against the plain baselines: LogReg+w 0.893976 vs LogReg 0.893499 (EXP-012 vs EXP-004, <strong>+0.0005</strong>); LightGBM+w 0.903091 vs LightGBM 0.903330 (EXP-013 vs EXP-010, <strong>−0.0002</strong>); LogReg+SMOTE 0.889475 vs LogReg 0.893499 (EXP-014 vs EXP-004, <strong>−0.0040</strong>). Class weighting is a wash: the two deltas point in opposite directions and sit far inside the fold-to-fold spread. SMOTE is the largest of the three effects and it is <em>negative</em> (~2.7× the fold std) — plausibly, interpolated minority points blur the local ranking boundary rather than sharpen it. Even so, it moves AUC by less than half the +0.010 that switching algorithm families bought, and the operative fact is that <strong>none of the three techniques improves AUC</strong>. The rank-metric hypothesis is confirmed for class weighting; SMOTE breaks its “no material change” clause, but by hurting rather than helping. No imbalance handling is used in the final model.</p>
+<p>For completeness: these techniques <em>would</em> matter for accuracy, recall, or F1 at a fixed operating threshold — which is exactly why the metric choice and the imbalance experiments must be interpreted together.</p>
+<hr />
+<h2 id="feature-selection-and-hypothesis">8. Feature selection and hypothesis</h2>
+<p>All selection experiments use LightGBM with the Section 7 default configuration (trees=500, lr=0.05) on the canonical folds. The reference point is the all-76-column LightGBM baseline (EXP-010: 0.903330 ± 0.001782). We standardize on LightGBM rather than the nominally best zoo model (XGBoost, EXP-011) because the three boosters are separated by ≤ 0.00015 — effectively a coin toss — while LightGBM is the fastest to train, which matters when every variant costs ten folds on 437k rows.</p>
+<h3 id="the-driver-group-hypothesis-stated-before-testing">8.1 The driver-group hypothesis — stated before testing</h3>
+<p>Before running anything, we committed to five driver blocks (notebook §7):</p>
+<ul>
+<li><strong>B1 — health-burden days:</strong> <code>PHYSHLTH</code>, <code>MENTHLTH</code>, <code>POORHLTH</code>;</li>
+<li><strong>B2 — functional limitation and chronic conditions</strong> (25 columns): <code>DIFFWALK</code>, <code>DIABETE4</code>, <code>BPHIGH6</code> and the other condition/limitation items;</li>
+<li><strong>B3 — age:</strong> <code>_AGE80</code>;</li>
+<li><strong>B4 — socioeconomic core:</strong> <code>EDUCA</code>, <code>INCOME3</code>, <code>EMPLOY1</code>;</li>
+<li><strong>B5 — health behaviors:</strong> smoking, alcohol, exercise and related items.</li>
+</ul>
+<p><strong>H1:</strong> a model restricted to these blocks — 39 of the 76 columns — will come within a small margin of the all-76 model. The justification, written down in advance: the linear model already reaches 0.8935 on the full matrix (EXP-004), so the signal is concentrated and largely additive; <code>PHYSHLTH</code> alone associates with the target at ρ = +0.450 (§4.3); and B1+B2 are precisely the constructs a clinician would inspect to guess someone’s self-rated health.</p>
+<h3 id="results-every-route-to-fewer-features-loses-auc">8.2 Results: every route to fewer features loses AUC</h3>
+<p>Table 8 — Feature subsets vs all 76 columns, LightGBM on the fixed 10 folds (source: <code>experiments.csv</code>).</p>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 22%" />
+<col style="width: 22%" />
+<col style="width: 22%" />
+</colgroup>
+<thead>
+<tr>
+<th>EXP</th>
+<th>Feature set</th>
+<th style="text-align: right;">Mean AUC</th>
+<th style="text-align: right;">Std</th>
+<th style="text-align: right;">Δ vs all-76</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EXP-010</td>
+<td>all 76 columns (reference)</td>
+<td style="text-align: right;">0.903330</td>
+<td style="text-align: right;">0.001782</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>EXP-015</td>
+<td>H1 driver blocks (39 columns)</td>
+<td style="text-align: right;">0.898831</td>
+<td style="text-align: right;">0.001655</td>
+<td style="text-align: right;">−0.004499</td>
+</tr>
+<tr>
+<td>EXP-016</td>
+<td>complement of H1 (37 columns, alone)</td>
+<td style="text-align: right;">0.781025</td>
+<td style="text-align: right;">0.002139</td>
+<td style="text-align: right;">−0.122305</td>
+</tr>
+<tr>
+<td>EXP-017</td>
+<td>SelectKBest, mutual info, k=100 one-hot</td>
+<td style="text-align: right;">0.899713</td>
+<td style="text-align: right;">0.001689</td>
+<td style="text-align: right;">−0.003617</td>
+</tr>
+<tr>
+<td>EXP-018</td>
+<td>PCA, 50 components</td>
+<td style="text-align: right;">0.882364</td>
+<td style="text-align: right;">0.001574</td>
+<td style="text-align: right;">−0.020966</td>
+</tr>
+<tr>
+<td>EXP-019</td>
+<td>PCA, 100 components</td>
+<td style="text-align: right;">0.884982</td>
+<td style="text-align: right;">0.001295</td>
+<td style="text-align: right;">−0.018348</td>
+</tr>
+</tbody>
+</table>
+<p>Method notes. SelectKBest scores the one-hot columns with seeded mutual information (<code>random_state=42</code>, because the MI estimator is itself stochastic) and is fitted <strong>inside</strong> each training fold — selecting on the full data before CV would leak test-fold information into the choice of features. PCA is likewise fitted inside each training fold, on median-imputed, standardized input.</p>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig05_importance_top30.png" alt="Gain importances" />
+<figcaption aria-hidden="true">Gain importances</figcaption>
+</figure>
+<p><em>Figure 5: Top 30 columns by LightGBM gain importance, dummy columns aggregated back to their 76 parents (EXP-010 model; notebook §7). <code>PHYSHLTH</code> alone carries roughly half of the total gain.</em></p>
+<ul>
+<li><strong>H1 is nearly confirmed (EXP-015).</strong> The 39-column subset recovers 99.5% of the all-76 AUC (0.898831 / 0.903330). The loss is real but small: −0.0045, about 2.7× the subset’s fold std, and the subset never beats the full set in any single fold. Five survey blocks ≈ the whole survey.</li>
+<li><strong>The complement is redundant, not empty (EXP-016).</strong> The 37 discarded columns <em>alone</em> still reach 0.781025 — genuine standalone signal — yet adding them to H1 buys back only +0.0045 (0.903330 − 0.898831). BRFSS measures its core constructs several times over; the columns outside H1 mostly repeat information the driver blocks already carry.</li>
+<li><strong>Automatic selection does not beat the hypothesis (EXP-017).</strong> SelectKBest lands at 0.899713 — marginally above the hand-built H1 subset, still below all-76. An honest negative: the filter found no compact set that improves on the full matrix, and no reason to drop columns.</li>
+<li><strong>PCA compression loses signal (EXP-018/019).</strong> Fifty and one hundred components score 0.882364 and 0.884982 — both ≈ 0.02 below the raw matrix. Variance kept is not signal kept: the directions PCA preserves are dominated by high-variance categorical blocks, not by the target-relevant structure.</li>
+</ul>
+<p><strong>Verdict: keep all 76 columns.</strong> Every selection route loses AUC, and with ~394k training rows there is no overfitting pressure forcing 322 one-hot columns down. The hypothesis was still worth testing — it tells us <em>where the signal lives</em>, and the gain importances agree (Figure 5): <code>PHYSHLTH</code> dominates with roughly half of total gain, followed by the chronic-condition, limitation, and socioeconomic items — blocks B1, B2, and B4 of H1.</p>
+<hr />
+<h2 id="hyperparameter-tuning-and-statistical-comparison">9. Hyperparameter tuning and statistical comparison</h2>
+<h3 id="search-design-and-winners">9.1 Search design and winners</h3>
+<p>Both leading boosters from Section 7 entered tuning. For each family, <code>RandomizedSearchCV</code> drew <strong>n_iter = 10</strong> candidate configurations over the family’s core knobs (learning rate, tree size, depth/leaves, and the minimum-samples/min-child-weight regularization), scored by an <strong>inner</strong> <code>StratifiedKFold(3, shuffle=True, random_state=42)</code> with <code>roc_auc</code>, search seed 42. Each family’s winning configuration was then re-trained and scored on the <strong>canonical</strong> 10 folds, which the inner search never touches — those outer scores are what land in the experiment log.</p>
+<p>Best configurations found (inner-search output, notebook §8):</p>
+<ul>
+<li><strong>LightGBM:</strong> <code>num_leaves=31, n_estimators=500, min_child_samples=200, learning_rate=0.03</code> — inner mean AUC 0.903337;</li>
+<li><strong>XGBoost:</strong> <code>n_estimators=800, min_child_weight=50, max_depth=8, learning_rate=0.03</code> — inner mean AUC 0.902960.</li>
+</ul>
+<p>Table 9 — Tuned vs default, canonical 10 folds (source: <code>experiments.csv</code>).</p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 23%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>EXP</th>
+<th>Model</th>
+<th>Configuration</th>
+<th style="text-align: right;">Mean AUC</th>
+<th style="text-align: right;">Std</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EXP-010</td>
+<td>LightGBM</td>
+<td>default (trees=500, lr=0.05)</td>
+<td style="text-align: right;">0.903330</td>
+<td style="text-align: right;">0.001782</td>
+</tr>
+<tr>
+<td><strong>EXP-020</strong></td>
+<td><strong>LightGBM, tuned</strong></td>
+<td>leaves 31, trees 500, min_child 200, lr 0.03</td>
+<td style="text-align: right;"><strong>0.903672</strong></td>
+<td style="text-align: right;">0.001762</td>
+</tr>
+<tr>
+<td>EXP-011</td>
+<td>XGBoost</td>
+<td>default (trees=500, lr=0.05, depth 6)</td>
+<td style="text-align: right;">0.903449</td>
+<td style="text-align: right;">0.001764</td>
+</tr>
+<tr>
+<td>EXP-021</td>
+<td>XGBoost, tuned</td>
+<td>trees 800, min_child_w 50, depth 8, lr 0.03</td>
+<td style="text-align: right;">0.903640</td>
+<td style="text-align: right;">0.001754</td>
+</tr>
+</tbody>
+</table>
+<h3 id="wilcoxon-signed-rank-tests">9.2 Wilcoxon signed-rank tests</h3>
+<p>Because every model is scored on the <em>same</em> ten folds (§5.1), fold scores pair up directly and the exact paired Wilcoxon signed-rank test applies. With n = 10 pairs, the smallest two-sided p the test can produce is 0.002 — an all-ten-fold sweep.</p>
+<p>Table 10 — Paired comparisons on the 10 canonical folds (fold scores from <code>experiments.csv</code>).</p>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>EXP pair</th>
+<th style="text-align: right;">Median Δ AUC / fold</th>
+<th style="text-align: right;">Folds won</th>
+<th style="text-align: right;">p (exact, 2-sided)</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tuned LGBM vs tuned XGB</td>
+<td>020 vs 021</td>
+<td style="text-align: right;">−0.000022</td>
+<td style="text-align: right;">5 / 10</td>
+<td style="text-align: right;">1.000</td>
+<td><strong>tie</strong></td>
+</tr>
+<tr>
+<td>Tuned vs default LGBM</td>
+<td>020 vs 010</td>
+<td style="text-align: right;">+0.000356</td>
+<td style="text-align: right;">9 / 10</td>
+<td style="text-align: right;">0.0059</td>
+<td>small real gain</td>
+</tr>
+<tr>
+<td>Tuned LGBM vs LogReg</td>
+<td>020 vs 004</td>
+<td style="text-align: right;">+0.010288</td>
+<td style="text-align: right;">10 / 10</td>
+<td style="text-align: right;">0.0020</td>
+<td>decisive</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Tuned LGBM vs tuned XGB: an honest tie.</strong> Median per-fold difference −0.000022, five fold wins each way, p = 1.000. The two implementations are indistinguishable at this scale. We select <strong>LightGBM</strong> as the final model — the same score to within 0.000032 (0.903672 vs 0.903640) at lower training cost — and we report “tied”, not “winner”.</li>
+<li><strong>Tuning is real but tiny.</strong> +0.000356 median per fold, 9/10 folds positive, p = 0.0059: significant even at n = 10, yet roughly 29× smaller than the family gap.</li>
+<li><strong>Family choice dwarfs tuning.</strong> Tuned LightGBM beats the logistic baseline by +0.010288 median per fold with a 10/10 sweep, p at the n = 10 floor (0.0020).</li>
+</ul>
+<p><strong>Headline: on this dataset, choosing the model family (linear → boosting) bought about 29× more AUC than tuning the chosen family (+0.0103 vs +0.00036).</strong> Effort belongs in representation and family selection first; hyperparameter tuning is the last few ten-thousandths.</p>
+<h3 id="nested-cv-is-the-tuned-score-optimistic">9.3 Nested CV — is the tuned score optimistic?</h3>
+<p>A nested CV (EXP-022) re-ran the selection honestly: inside each of the 10 outer folds, a fresh <code>RandomizedSearchCV</code> (n_iter=4 × 3 inner folds, seed 42) re-selected hyperparameters, and the outer fold scored the refit winner. Result: <strong>0.903672 ± 0.001762</strong> — identical to the non-nested tuned score (EXP-020), i.e. selection optimism −0.000000.</p>
+<p>An exactly-zero optimism looks suspicious until the mechanism is stated: the inner searches re-selected the <strong>same configuration in all 10 outer folds</strong>, so the nested procedure refit the same models on the same folds as EXP-020 and returned bit-identical fold scores. The correct reading is not “no bias is possible” but “at this search budget the space has a clear optimum, the inner searches converge to it from every training subset, and the reported 0.903672 carries no selection-induced optimism.” Had different outer folds selected different configurations, the nested score would have fallen below the non-nested one; it did not.</p>
+<hr />
+<h2 id="error-analysis-and-explainability-xai">10. Error analysis and explainability (XAI)</h2>
+<p>The final model is the tuned LightGBM of Section 9 (EXP-020 configuration). Out-of-fold (OOF) probabilities were collected for every respondent on the canonical folds — each person scored by the fold’s model, which never saw them. The OOF AUC is <strong>0.903667</strong>, matching EXP-020’s fold mean of 0.903672 up to fold-assembly rounding — the sanity check that the OOF scores are aligned correctly (notebook §9).</p>
+<h3 id="where-the-errors-live-the-34-boundary">10.1 Where the errors live: the 3/4 boundary</h3>
+<p>At a hard threshold τ = 0.5 (for concreteness only — AUC itself is threshold-free), the OOF predictions make <strong>48,218 errors on 437,532 respondents (11.0%)</strong>. The taxonomy by true class (notebook §9):</p>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig06_error_taxonomy.png" alt="Error taxonomy" />
+<figcaption aria-hidden="true">Error taxonomy</figcaption>
+</figure>
+<p><em>Figure 6: Error taxonomy at τ = 0.5 by true GENHLTH class — false positives concentrate against true Good, false negatives against true Fair (notebook §9).</em></p>
+<ul>
+<li><strong>77.9% of false positives</strong> are respondents whose true rating is GENHLTH = 3 (<em>Good</em>);</li>
+<li><strong>92.5% of false negatives</strong> are respondents whose true rating is GENHLTH = 4 (<em>Fair</em>);</li>
+<li>together, <strong>88.1% of all errors sit on the 3/4 boundary</strong>; the remaining 11.9% are spread over the rest of the scale.</li>
+</ul>
+<p>The model’s errors are not scattered — they are massed exactly where the survey itself is softest. <em>Good</em> vs <em>Fair</em> is a single subjective step on a self-report scale; two respondents in objectively similar health can place themselves on opposite sides. Errors at this boundary are <strong>aleatoric</strong> (label ambiguity), not model failure: this is noise in the outcome, not signal the model missed, and it sets the realistic error floor for any classifier on this target.</p>
+<h3 id="three-respondents-the-model-gets-wrong-or-barely-decides">10.2 Three respondents the model gets wrong — or barely decides</h3>
+<p>Table 11 — Case studies from the OOF predictions on the canonical folds (notebook §9).</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th style="text-align: right;">Row index</th>
+<th>True class</th>
+<th style="text-align: right;">OOF P(Fair/Poor)</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td style="text-align: right;">307808</td>
+<td>Good (y=0)</td>
+<td style="text-align: right;">0.9632</td>
+<td>confident false positive</td>
+</tr>
+<tr>
+<td>B</td>
+<td style="text-align: right;">393280</td>
+<td>Fair/Poor (y=1)</td>
+<td style="text-align: right;">0.0023</td>
+<td>confident false negative</td>
+</tr>
+<tr>
+<td>C</td>
+<td style="text-align: right;">21595</td>
+<td>Good (y=0)</td>
+<td style="text-align: right;">0.5000</td>
+<td>fence-sitter</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Case A — row 307808, confident false positive.</strong> The model gives 0.9632; the respondent self-rates <em>Good</em>. The profile against population medians: 30 of 30 poor-physical-health days (population median 0), 30 days of activity limitation, 5 poor-mental-health days, BMI 51.4 (median 27.4), difficulty walking = yes, diabetic, lowest income bracket, retired. Every <em>measured</em> feature is characteristic of the Fair/Poor population — the label is the outlier, not the model. The most plausible explanation is label noise or a resilient self-assessment: the model is “wrong” only if the self-rating is taken as ground truth.</p>
+<p><strong>Case B — row 393280, confident false negative.</strong> The model gives 0.0023; the respondent self-rates <em>Fair/Poor</em>. Every measured value is at or better than the population medians: zero unhealthy days, BMI 22, no functional limitations, no chronic conditions, income bracket 9 (median 7), employed, college-educated. Nothing in the measured feature space separates this person from the healthy majority — the self-rating must be anchored in factors the survey does not measure. This case is the empirical error floor of the feature set: no model on these 76 columns could score this respondent up without damaging thousands of others.</p>
+<p><strong>Case C — row 21595, fence-sitter, OOF exactly 0.5000.</strong> The model lands precisely on the threshold; the respondent self-rates <em>Good</em>. The profile is genuinely two-sided: age 80 (top-coded maximum, median 57) and difficulty walking = yes push toward Fair/Poor; zero unhealthy days (physical and mental), BMI 21.7, and no chronic conditions push toward Good; income is unanswered and activity-limitation was skipped — the missingness itself contributes signal. With evidence pulling both ways, 0.5000 is not model failure but calibrated indifference: the respondent sits exactly on the population’s decision boundary, and a one-step difference in self-rating flips the label. Case C is the boundary ambiguity of §10.1 made personal.</p>
+<p>The error hypothesis we wrote down before profiling — that errors would be dominated by (i) 3/4 boundary ambiguity, (ii) respondents whose objective profile contradicts their self-rating, and (iii) respondents whose rating is anchored on unmeasured factors — is confirmed on every tested point: (i) by the taxonomy (88.1% of errors), (ii) by Case A, (iii) by Case B.</p>
+<h3 id="global-explanation-shap">10.3 Global explanation — SHAP</h3>
+<p>SHAP <code>TreeExplainer</code> on the tuned model, computed on a 20,000-respondent random sample (seed 42), with dummy columns aggregated back to their 76 parent columns. Mean |SHAP|, top 12 (notebook §9): <code>PHYSHLTH</code> 0.7361, <code>DIABETE4</code> 0.1947, <code>_BMI5</code> 0.1865, <code>DIFFWALK</code> 0.1836, <code>EDUCA</code> 0.1827, <code>INCOME3</code> 0.1736, <code>EXERANY2</code> 0.1568, <code>MENTHLTH</code> 0.1487, <code>_RACE</code> 0.1401, <code>BPHIGH6</code> 0.1386, <code>SEXVAR</code> 0.1279, <code>EMPLOY1</code> 0.0981.</p>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig07_shap_global.png" alt="SHAP global" />
+<figcaption aria-hidden="true">SHAP global</figcaption>
+</figure>
+<p><em>Figure 7: SHAP global importance (mean |SHAP|) for the tuned LightGBM, 20k-row sample, seed 42 (notebook §9).</em></p>
+<p>The ranking echoes the gain importances of Section 8: <code>PHYSHLTH</code> first by a factor of ~4 over the runner-up, then a tight tier of chronic conditions (diabetes, BMI, hypertension), functional limitation, health behaviors, and the socioeconomic anchors (<code>EDUCA</code>, <code>INCOME3</code>, <code>EMPLOY1</code>) — exactly blocks B1/B2/B4/B5 of hypothesis H1. Two demographic attributes (<code>SEXVAR</code>, <code>_RACE</code>) also carry weight — small, but nonzero; a deployment would inherit these associations, which we return to in the limitations (§11.1).</p>
+<h3 id="local-explanations-why-the-model-scored-the-cases-as-it-did">10.4 Local explanations — why the model scored the cases as it did</h3>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig08_shap_case_A.png" alt="SHAP case A" />
+<figcaption aria-hidden="true">SHAP case A</figcaption>
+</figure>
+<p><em>Figure 8A: Local SHAP explanation for Case A (row 307808): the health-burden days, BMI, difficulty walking, and diabetes dominate the push above 0.5 — the 0.9632 is a faithful reading of a Fair/Poor-shaped profile (notebook §9).</em></p>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig08_shap_case_B.png" alt="SHAP case B" />
+<figcaption aria-hidden="true">SHAP case B</figcaption>
+</figure>
+<p><em>Figure 8B: Local SHAP explanation for Case B (row 393280): the largest contributions point away from Fair/Poor and nothing measured pushes up — a clean demonstration that the error floor is a property of the feature set, not a model quirk (notebook §9).</em></p>
+<figure>
+<img src="file:///C:/Users/Hassene/Documents/Machine%20learning%20final%20project/ml_fp2/figures/fig08_shap_case_C.png" alt="SHAP case C" />
+<figcaption aria-hidden="true">SHAP case C</figcaption>
+</figure>
+<p><em>Figure 8C: Local SHAP explanation for Case C (row 21595): age and difficulty walking push up, clean health-days and BMI push down, and the credits nearly cancel — the waterfall picture of a 0.5000 (notebook §9).</em></p>
+<hr />
+<h2 id="conclusions">11. Conclusions</h2>
+<p><strong>What is established</strong> (every number traces to <code>experiments.csv</code>):</p>
+<ol type="1">
+<li><strong>The problem was made tractable and honest by construction.</strong> One binary target definition (16.63% positive, Table 1), one fixed stratified 10-fold split with seed 42 for every experiment (§5.1), one append-only experiment log as the source of every reported number (§5.4), and demonstrated determinism — three independent re-runs of the baseline block produced bit-identical fold scores.</li>
+<li><strong>Disciplined triage cut 303 raw columns to 76</strong> with written rules and empirical evidence — removing four outright leaks (including <code>_RFHLTH</code>, a 100% copy of the target), 65 deterministic duplicates, and 123 unusable columns — verified against an independent triage with a 76/76 keep-set match (§3.2).</li>
+<li><strong>Baselines bracketed the problem.</strong> Dummy 0.500 (floor), LogReg 0.8935 (the signal is largely additive — and insensitive to C), pruned single tree 0.8813 (nonlinearity alone does not beat linear here) (Table 6).</li>
+<li><strong>Ensembles: the algorithm family is what matters.</strong> Boosting adds ≈ +0.010 over linear (0.9033–0.9034, EXP-009..011); bagging adds ≈ +0.002 (EXP-008) (Table 7).</li>
+<li><strong>Imbalance handling does not move AUC.</strong> Class weights: +0.0005 / −0.0002 (EXP-012/013); SMOTE: −0.0040 (EXP-014) — the largest of the three effects, still under half the family gap, and in the harmful direction. No imbalance technique is used in the final model.</li>
+<li><strong>Feature selection: keep everything.</strong> The pre-stated driver-block hypothesis was nearly confirmed — 39 of 76 columns retain 99.5% of the AUC (EXP-015 vs EXP-010) — but every selection route (hand-built subset, mutual-information filter EXP-017, PCA EXP-018/019) loses AUC against all 76 columns (Table 8).</li>
+<li><strong>Tuning helps a little; the statistics say where the money is.</strong> Tuned LightGBM 0.903672 (EXP-020), tied with tuned XGBoost 0.903640 (EXP-021, p = 1.000 — an honest tie), significantly above its untuned self (median +0.000356, p = 0.0059) and decisively above LogReg (median +0.010288, p = 0.0020, 10/10 folds); nested CV (EXP-022) confirms the score with zero selection optimism (§9).</li>
+<li><strong>Errors concentrate at the label’s soft boundary.</strong> 88.1% of all errors at τ = 0.5 involve the <em>Good</em>/<em>Fair</em> boundary (§10.1); the two confident-error archetypes are label noise (Case A) and ratings anchored on unmeasured factors (Case B); SHAP agrees with the gain importances and with hypothesis H1 (§10.3).</li>
+</ol>
+<p><strong>Final recommendation.</strong> <strong>Tuned LightGBM</strong> (<code>num_leaves=31, n_estimators=500, min_child_samples=200, learning_rate=0.03</code>): mean ROC-AUC <strong>0.903672 ± 0.001762</strong> on the canonical folds (EXP-020). The evidence chain: statistically tied with tuned XGBoost (EXP-021) — we report a tie, not a win, and choose LightGBM for the equal score at lower training cost; significantly better than its own untuned default (median +0.000356, p = 0.0059) and decisively better than the linear baseline (median +0.010288, p = 0.0020, 10/10 folds); nested-CV confirmed (EXP-022, optimism zero with the mechanism explained in §9.3); interpretable — SHAP locates the signal in health-burden days, chronic conditions, functioning, and socioeconomic anchors, matching the hypothesis we stated before testing; and its errors concentrate where the <em>label</em> is ambiguous, not where the model is weak. For ranking/screening use on BRFSS-like data, this is the model we would hand over.</p>
+<h3 id="known-limitations">11.1 Known limitations</h3>
+<ul>
+<li><strong><code>FLSHTMY3</code> sentinel wart.</strong> The 777777 (<em>don’t know</em>) sentinel on the month-of-last-flu-shot column was kept as its own one-hot category instead of being recoded to NaN (§3.3 recoded only its 999999 sentinel). It affects ~16.6k rows, is at most a noise-level effect, and leaks nothing (it is an input category, not target-derived) — but it is inconsistent with our per-column sentinel discipline and would be the first preprocessing fix in a future iteration. A deadline trade-off, documented rather than rushed.</li>
+<li><strong>Canonical log.</strong> The canonical experiment log for this project is <code>ml_fp2/experiments.csv</code> (22 rows, EXP-001..022); every model number in this report cites it.</li>
+<li><strong>Self-reported target.</strong> The outcome is a subjective rating; with 88.1% of errors on the 3/4 boundary (§10.1), the achievable AUC has a ceiling set by the label, and our 0.9037 should be read against it.</li>
+<li><strong>Ranking only, no calibration.</strong> The metric is ROC-AUC; the OOF scores are not calibrated probabilities, and any fixed-threshold deployment would need a calibration analysis first (§11.2).</li>
+<li><strong>Demographic associations.</strong> SHAP shows <code>SEXVAR</code> and <code>_RACE</code> contributing (mean |SHAP| 0.1279 / 0.1401, §10.3). A deployed screener would inherit these associations; fairness review would be mandatory before any real-world use.</li>
+<li><strong>Selection bounded by the whitelist.</strong> Feature selection operated inside the 76-column whitelist; a triage error that dropped a useful column cannot be recovered downstream (§3.2).</li>
+</ul>
+<h3 id="what-we-would-do-next">11.2 What we would do next</h3>
+<ol type="1">
+<li><strong>Fix <code>FLSHTMY3</code> properly</strong> — per-column handling of the 777777 sentinel (recode to NaN → its own <code>_nan</code> one-hot level, consistent with the other 56 recoded columns).</li>
+<li><strong>Calibrate the scores</strong> (Platt/isotonic on the OOF predictions) if the model is ever used for fixed-threshold screening rather than ranking.</li>
+<li><strong>Return to the original 5-class problem.</strong> The binary result — and the fact that errors cluster on one adjacent-class boundary — suggests an ordinal model could exploit the gradient that the binary collapse throws away.</li>
+</ol>
+<hr />
+<h2 id="ethics-and-use-of-generative-ai">12. Ethics and Use of Generative AI</h2>
+<p>Course policy requires an accurate statement of any assistance received, human or AI. This project used a generative AI tool extensively, and we disclose it in full below. The log is maintained during the project in <code>AI_ASSISTANCE_LOG.md</code>; the table reproduces it faithfully.</p>
+<h3 id="assistance-log">12.1 Assistance log</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Date</th>
+<th>Tool</th>
+<th>Contribution</th>
+<th>How it was used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-07</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Project planning: weekend session plan, explain-then-code working agreement, decision to rebuild notebook-first and reuse v1 findings (never code)</td>
+<td>Adopted as working plan</td>
+</tr>
+<tr>
+<td>2026-11-07</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Created folder structure, Notebook 01 scaffolding (setup, constants, first look, CV + AUC concept demos with comments)</td>
+<td>Student runs/reviews each cell; concepts discussed in session</td>
+</tr>
+<tr>
+<td>2026-11-07</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Notebook 02 scaffolding: leakage hunt guided by v1 watchlist (leakage / duplicate / junk categories), verification cells (_RFHLTH agreement, crosstab duplicate checks, sentinel traps), missingness + imbalance figures</td>
+<td>Student runs cells, verifies v1 findings empirically, answers comprehension questions</td>
+</tr>
+<tr>
+<td>2026-11-07</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Data probing script (code ranges for engineered columns); Notebook 03 scaffolding: 76-column whitelist grouped by type, per-column sentinel recode dictionary (codebook-derived), frequency decoders (per-month), sanity gates, parquet checkpoint</td>
+<td>Student runs cells, verifies gates pass, answers comprehension questions</td>
+</tr>
+<tr>
+<td>2026-11-07</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Consolidation into single master notebook (Sections 1-4) per student’s Colab/local one-notebook workflow; Section 3 rebuilt to DERIVE the whitelist in-notebook (six rules: leak/admin/constant/sparse/low-coverage/duplicate, computed where possible, codebook lists where semantic) with v1’s triage CSV used offline as guide for calibration and inside the notebook only as final cross-check</td>
+<td>Student runs all sections; funnel outputs and v1 verification become report evidence</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Trimmed all markdown/comments to one-liners per student request; added Section 5 (baselines): one-hot design matrix (dummy_nan), experiments.csv + run_cv helper, Dummy/LogReg(C grid)/DecisionTree(depth,leaf grid), results table + figure</td>
+<td>Student runs Section 5, answers comprehension questions</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Bug fixes after student’s error reports (GENHLTH 7/9 codes filtered in imbalance figure; Rule-5 exceptions made re-run-safe); added Section 6 (model zoo + imbalance): RF/HistGB/LightGBM/XGBoost + class_weight &amp; SMOTE comparison via imblearn fold-internal pipeline</td>
+<td>Student runs Section 6; error reports and self-fixes incorporated back into the notebook</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Launched background subagents (report-writer: skeleton + frozen sections; qa-reviewer: read-only audit of Sections 1-6; general: screencast outline); added Section 7 (feature selection &amp; hypothesis): gain importances with dummy-to-parent aggregation, H1 blocks + subset/complement comparison, SelectKBest(MI) inside folds, PCA(50/100) + variance report</td>
+<td>Subagent outputs reviewed by coordinator before use; student runs Section 7</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Maintenance: deduplicated experiments.csv (re-run cells had appended duplicate EXP-001..007 rows; values bit-identical = determinism evidence) and made run_cv refresh-on-rerun</td>
+<td>Log stays canonical; duplicate-free table/figure cells</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode qa-reviewer subagent</td>
+<td>Read-only audit of notebook Sections 1-6: found Rule-4 triage cell accidentally converted to markdown (fresh-run blocker), unseeded mutual_info_classif in Section 7 KBest, duplicate log rows in figure cells; plus warnings (FLSHTMY3 777777 sentinel treated as category — documented wart; CKPT_DIR makedirs)</td>
+<td>Coordinator applied all fixes; ml_fp2/experiments.csv declared the canonical experiment log for the rebuild; FLSHTMY3 wart documented in report known-limitations</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Added Section 8 (tuning &amp; statistics): RandomizedSearchCV (n_iter=10, inner 3-fold) on LGBM + XGB, tuned evaluation on canonical folds (EXP-020/021), Wilcoxon signed-rank on three paired comparisons, nested CV with small inner search (EXP-022)</td>
+<td>Student runs Section 8; results fill report Section 9</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Added Section 9 (error analysis &amp; XAI): OOF probabilities from tuned winner on canonical folds, error taxonomy by true GENHLTH class + figure, 3 archetype cases (confident FP/FN, fence) profiled vs population medians, SHAP TreeExplainer global importance (dummy-to-parent aggregation) + 3 local waterfalls</td>
+<td>Student runs Section 9; outputs fill report Section 10</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Drafted this technical report from the notebook, the experiment log, and the triage record</td>
+<td>Student reviews, verifies every cited number against sources, and finalizes</td>
+</tr>
+<tr>
+<td>2026-11-08</td>
+<td>OpenCode agent (GLM model)</td>
+<td>Filled report Sections 7-11 with the final verified numbers (EXP-014..EXP-022), the error-case profiles, the SHAP readings, and the statistical-test interpretations; refreshed Section 12 from the current assistance log</td>
+<td>Student verifies each cited number against experiments.csv and the notebook before submission</td>
+</tr>
+</tbody>
+</table>
+<h3 id="statement-of-responsibility">12.2 Statement of responsibility</h3>
+<p><strong>Tool used:</strong> OpenCode (agentic coding assistant running the GLM large language model), used across the whole project timeline (2026-11-07/08).</p>
+<p><strong>Purpose:</strong> (1) understanding ML concepts (stratified CV, ROC-AUC, leakage, SMOTE); (2) generating and structuring notebook code (preprocessing, triage rules, sentinel dictionaries, model pipelines, experiment logging, figures); (3) debugging (fixes for the GENHLTH sentinel filter and re-run-safety of rule 5, both originating from the student’s own error reports); (4) drafting and structuring this report; (5) filling its final sections with the verified experiment numbers and interpreting the tuning statistics, the error analysis, and the SHAP output.</p>
+<p><strong>How outputs were used:</strong> every cell was run by the student in the master notebook; verification cells, sanity-gate assertions, and the independent-triage cross-check were executed and their outputs inspected; the student answered comprehension questions for each section, reported errors that the AI then helped fix, and reviewed the report’s numbers against the notebook and <code>experiments.csv</code>. All experiment numbers cited in this report come from runs executed and logged by the student in <code>experiments.csv</code>.</p>
+<blockquote>
+<p>I, Hassene Bouamama, assume responsibility for and authorship of this work. All AI-generated material was personally reviewed, executed, verified, and adapted by me before being incorporated. No assistance was received from any other person.</p>
+</blockquote>
+<p><em>No part of this work was concealed: this section is the complete record of assistance received.</em></p>
+
+</body>
+</html>

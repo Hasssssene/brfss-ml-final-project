@@ -1,0 +1,174 @@
+/* Print CSS for report.pdf — A4, 2cm margins, 11pt serif body, sans headings,
+   zebra tables, centered small figure captions, page-break-before major sections,
+   no orphan headings. Rendered headlessly by Microsoft Edge. */
+
+@page {
+  size: A4;
+  margin: 2cm;
+}
+
+html {
+  font-size: 11pt;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #1a1a1a;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+/* ---------- Headings ---------- */
+h1, h2, h3, h4, h5 {
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  color: #14263a;
+  page-break-after: avoid;          /* no orphan headings */
+  break-after: avoid;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+}
+
+h1 {
+  font-size: 19pt;
+  line-height: 1.25;
+  margin-top: 0;
+}
+
+/* Every numbered section starts on a fresh page (title page holds only h1 + meta). */
+h2 {
+  font-size: 14.5pt;
+  page-break-before: always;
+  break-before: page;
+  border-bottom: 1.5pt solid #14263a;
+  padding-bottom: 0.18em;
+  margin-top: 0;
+}
+
+/* The first section shares the title page rather than forcing a break. */
+h2:first-of-type {
+  page-break-before: avoid;
+  break-before: avoid;
+  margin-top: 1.2em;
+}
+
+h3 {
+  font-size: 12pt;
+  color: #24425f;
+}
+
+h4 {
+  font-size: 11pt;
+  color: #34506b;
+}
+
+/* ---------- Paragraphs & lists ---------- */
+p { margin: 0.4em 0; orphans: 3; widows: 3; }
+
+ul, ol { margin: 0.3em 0 0.3em 1.2em; padding-left: 0.8em; }
+li { margin: 0.1em 0; }
+
+hr { border: none; border-top: 0.75pt solid #b9c2cc; margin: 1.2em 0; }
+
+strong { color: #14263a; }
+
+blockquote {
+  margin: 0.6em 1.2em;
+  padding: 0.5em 0.9em;
+  border-left: 3pt solid #34506b;
+  background: #f2f5f8;
+  font-size: 10.5pt;
+  page-break-inside: avoid;
+}
+
+/* ---------- Code ---------- */
+code, pre {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9pt;
+}
+code {
+  background: #f1f3f5;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+pre {
+  background: #f6f7f9;
+  border: 0.5pt solid #d4dae0;
+  padding: 0.5em 0.8em;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; }
+
+/* ---------- Tables ---------- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.7em 0 0.9em 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 8.4pt;
+  page-break-inside: auto;   /* long tables may split across pages */
+}
+caption {
+  caption-side: top;
+  text-align: left;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 9pt;
+  font-weight: 600;
+  color: #14263a;
+  padding-bottom: 0.25em;
+}
+thead { display: table-header-group; }  /* repeat header row after page split */
+tr { page-break-inside: avoid; break-inside: avoid; }
+th {
+  background: #14263a;
+  color: #ffffff;
+  font-weight: 600;
+  text-align: left;
+  padding: 2.5pt 4pt;
+  border: 0.5pt solid #14263a;
+  vertical-align: bottom;
+}
+td {
+  padding: 2pt 4pt;
+  border: 0.5pt solid #c3ccd5;
+  vertical-align: top;
+}
+tbody tr:nth-child(even) { background: #eef1f5; }  /* zebra rows */
+
+/* ---------- Figures ---------- */
+figure {
+  margin: 0.7em auto;
+  text-align: center;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+figure img {
+  max-width: 100%;
+  max-height: 8.75cm;
+  width: auto;
+  object-fit: contain;
+}
+figcaption {
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 8pt;
+  color: #4a5560;
+  text-align: center;
+  margin-top: 0.3em;
+  line-height: 1.3;
+}
+
+/* ---------- Title metadata block (first ul after h1) ---------- */
+h1 + ul {
+  list-style: none;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 10pt;
+  color: #33414f;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+a { color: #1d4f8a; text-decoration: none; }

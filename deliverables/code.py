@@ -3,7 +3,8 @@
 """BRFSS 2021 -- predict Fair/Poor general health (GENHLTH 4-5 vs 1-3).
 
 End-to-end pipeline: load raw survey -> whitelist (303 -> 76 columns) ->
-recode sentinels per codebook -> NaN-passthrough pipeline -> tuned
+recode sentinels per codebook -> exploratory profile (target, missingness,
+associations - report section 4) -> NaN-passthrough pipeline -> tuned
 LightGBM (EXP-014a) -> stratified 10-fold CV: ROC-AUC + confusion matrix.
 
 Every random component is seeded RANDOM_STATE = 42; the only CV splitter
@@ -40,6 +41,15 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
 import lightgbm
+
+try:                                    # EDA figures only; stats print without it
+    import matplotlib
+    matplotlib.use("Agg")               # headless-safe: savefig only, no windows
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+except ImportError:                     # matplotlib absent -> stats-only EDA
+    plt = None
+    Rectangle = None
 
 RANDOM_STATE = 42                       # the only seed used anywhere
 N_SPLITS = 10
@@ -442,6 +452,7 @@ def build_dataset() -> tuple[pd.DataFrame, np.ndarray, dict]:
 
     audit = sanity_checks(X_all, X, y_valid)
     audit["clean_s"] = time.perf_counter() - t0
+    audit["genhlth_raw"] = df[TARGET_COL].loc[valid].to_numpy()  # 1-5 codes, EDA panel
     return X, y_valid, audit
 
 
@@ -500,7 +511,151 @@ def sanity_checks(X_all: pd.DataFrame, X: pd.DataFrame,
     return {"n_valid": len(y), "n_pos": n_pos, "rate": rate}
 
 
-# [4] PIPELINE - NaN-passthrough preprocessor (the booster route)
+# [4] EXPLORATORY DATA ANALYSIS - report section 4 (target / missingness / rho)
+FIGURES_DIR = ROOT / "figures"
+C_NEG, C_POS = "#4C72B0", "#DD8452"     # y = 0 / y = 1 (and signed rho)
+C_TOP, C_REST = "#C44E52", "#9AA5B1"    # highlight / neutral bars
+GENHLTH_LBL = {1: "Excellent", 2: "Very good", 3: "Good", 4: "Fair", 5: "Poor"}
+
+
+def run_eda(X: pd.DataFrame, y: np.ndarray, genhlth_raw: np.ndarray,
+            mode: str, n_raw: int) -> None:
+    """Explore before modeling: the numbers cited in report section 4.
+
+    Prints the binary target distribution, the missingness profile of the
+    76-column matrix and the top univariate Spearman associations with the
+    target. Full mode also regenerates the first three EDA figures into
+    figures/; smoke mode prints the same tables on the subsample only.
+    """
+    n, n_pos = len(y), int(y.sum())
+    ratio = (n - n_pos) / n_pos
+    print(f"[eda] binary target: {n_pos:,} / {n:,} = {100 * y.mean():.2f}% "
+          f"Fair/Poor (imbalance 1 : {ratio:.1f})")
+
+    # missingness profile (sentinels already recoded to NaN in [3])
+    miss = (X.isna().mean() * 100).sort_values(ascending=False)
+    med = miss.median()
+    n_complete = int((miss == 0).sum())
+    n25, n50 = int((miss > 25).sum()), int((miss > 50).sum())
+    print(f"[eda] missingness: median {med:.1f}% | complete {n_complete} | "
+          f">25% {n25} | >50% {n50} | max {miss.index[0]} {miss.iloc[0]:.1f}%")
+    print("[eda] top-10 missing: "
+          + ", ".join(f"{c} {v:.1f}" for c, v in miss.head(10).items()))
+
+    # univariate association with the target (NaN-aware Spearman)
+    rho = X.corrwith(pd.Series(y, name="y"), method="spearman")
+    top = rho.reindex(rho.abs().sort_values(ascending=False).index)
+    print("[eda] top-15 |Spearman rho| vs target:")
+    print(top.head(15).round(4).to_string())
+
+    if plt is None or mode != "full":
+        print("[eda] figures skipped (no matplotlib or smoke mode)")
+        return
+
+    plt.rcParams.update({
+        "figure.dpi": 150, "savefig.dpi": 150, "font.size": 10,
+        "axes.titlesize": 12, "axes.titleweight": "bold",
+        "axes.labelsize": 10.5, "axes.grid": True, "axes.axisbelow": True,
+        "figure.facecolor": "white", "savefig.bbox": "tight",
+    })
+    FIGURES_DIR.mkdir(exist_ok=True)
+
+    # -- figure 1: raw GENHLTH classes + the binary target --
+    fig, axes = plt.subplots(1, 2, figsize=(12.5, 5.4), constrained_layout=True)
+    ax = axes[0]
+    cnts = [int((genhlth_raw == c).sum()) for c in GENHLTH_LBL]
+    bars = ax.bar(range(5), cnts, color=[C_NEG] * 3 + [C_POS] * 2,
+                  edgecolor="white", width=0.72)
+    for b, c in zip(bars, cnts):
+        ax.text(b.get_x() + b.get_width() / 2, c + 2500,
+                f"{c:,}\n({c / n * 100:.1f}%)", ha="center", va="bottom",
+                fontsize=10)
+    ax.set_xticks(range(5))
+    ax.set_xticklabels([f"{c}\n{GENHLTH_LBL[c]}" for c in GENHLTH_LBL])
+    ax.set_ylabel("Respondents")
+    ax.set_ylim(0, max(cnts) * 1.18)
+    ax.set_title("(a) Raw GENHLTH, 5 classes")
+    ax.text(0.985, 0.97,
+            f"valid rows n = {n:,}\n{n_raw - n:,} rows (DK/Refused/blank) excluded",
+            transform=ax.transAxes, ha="right", va="top", fontsize=9,
+            bbox=dict(boxstyle="round,pad=0.35", fc="#F2F2F2", ec="#CCCCCC"))
+    ax.legend(handles=[Rectangle((0, 0), 1, 1, fc=C_NEG),
+                       Rectangle((0, 0), 1, 1, fc=C_POS)],
+              labels=["y = 0  (classes 1-3)", "y = 1  (classes 4-5)"],
+              loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2,
+              frameon=False, fontsize=10)
+
+    ax = axes[1]
+    n0 = n - n_pos
+    bars = ax.bar([0, 1], [n0, n_pos], color=[C_NEG, C_POS],
+                  edgecolor="white", width=0.55)
+    for b, c in zip(bars, [n0, n_pos]):
+        ax.text(b.get_x() + b.get_width() / 2, c + 6000, f"{c:,}",
+                ha="center", va="bottom", fontsize=11, fontweight="bold")
+        ax.text(b.get_x() + b.get_width() / 2, c / 2, f"{c / n * 100:.2f} %",
+                ha="center", va="center", fontsize=13, fontweight="bold",
+                color="white")
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["y = 0\nGood or better\n(GENHLTH 1-3)",
+                        "y = 1\nFair / Poor\n(GENHLTH 4-5)"])
+    ax.set_ylabel("Respondents")
+    ax.set_ylim(0, n0 * 1.2)
+    ax.set_title(f"(b) Binary target: 1 : {ratio:.1f} class imbalance")
+    fig.suptitle("Target definition and class imbalance - BRFSS 2021, "
+                 "GENHLTH recoded to binary", fontsize=13.5, fontweight="bold")
+    fig.savefig(FIGURES_DIR / "eda_target_imbalance.png")
+    plt.close(fig)
+
+    # -- figure 2: missingness per column, sorted (76 bars) --
+    fig, ax = plt.subplots(figsize=(9.2, 13.2))
+    vals = miss.to_numpy()
+    ax.barh(range(len(vals)), vals,
+            color=[C_TOP if i < 10 else C_REST for i in range(len(vals))],
+            edgecolor="white", height=0.72)
+    ax.invert_yaxis()
+    ax.set_yticks(range(len(vals)))
+    ax.set_yticklabels(miss.index, fontsize=8)
+    ax.set_xlabel("Missing values after sentinel recode (%)")
+    ax.set_xlim(0, 88)
+    for i in range(10):
+        ax.text(vals[i] + 0.7, i + 0.02, f"{vals[i]:.1f}", va="center",
+                fontsize=8, color=C_TOP)
+    for v in (25, 50):
+        ax.axvline(v, color="#555555", ls="--", lw=1.1)
+        ax.text(v + 0.6, len(vals) - 1.2, f"{v} %", color="#555555", fontsize=9)
+    ax.set_title("Missingness of the 76-column matrix v1 (valid rows, sorted)")
+    ax.text(0.985, 0.03,
+            f"n = {n:,} valid rows - {n50} columns > 50% - {n25} columns > 25%\n"
+            f"median {med:.1f}% - {n_complete} columns complete\n"
+            "top-10 highlighted (crimson): optional-module + conditional items",
+            transform=ax.transAxes, ha="right", va="bottom", fontsize=9,
+            bbox=dict(boxstyle="round,pad=0.4", fc="#FDF3F3", ec=C_TOP, lw=0.8))
+    fig.savefig(FIGURES_DIR / "eda_missingness_matrix.png")
+    plt.close(fig)
+
+    # -- figure 3: top-25 |Spearman rho| with the target --
+    top25 = top.head(25)[::-1]
+    fig, ax = plt.subplots(figsize=(9.8, 9.4))
+    vals = top25.to_numpy()
+    ax.barh(range(len(vals)), vals,
+            color=[C_POS if v > 0 else C_NEG for v in vals],
+            edgecolor="white", height=0.72)
+    ax.set_yticks(range(len(vals)))
+    ax.set_yticklabels(top25.index, fontsize=9.5)
+    for i, v in enumerate(vals):
+        ax.text(v + (0.010 if v > 0 else -0.010), i, f"{v:+.3f}", va="center",
+                ha="left" if v > 0 else "right", fontsize=8.5,
+                color="#7a4a1e" if v > 0 else "#33507a")
+    ax.axvline(0, color="#333333", lw=1)
+    ax.set_xlim(-0.55, 0.58)
+    ax.set_xlabel(r"Spearman $\rho$ with target (y = 1 Fair/Poor)")
+    ax.set_title(r"Top-25 whitelist features by |Spearman $\rho$| with the target")
+    fig.savefig(FIGURES_DIR / "eda_association_top25.png")
+    plt.close(fig)
+    print(f"[eda] figures written: 3 PNG in {FIGURES_DIR}")
+
+
+# [5] PIPELINE - NaN-passthrough preprocessor (the booster route)
 def column_groups() -> dict:
     """Column groups per encoding, in whitelist order (as in column_meta)."""
     return {
@@ -539,7 +694,7 @@ def build_preprocessor() -> ColumnTransformer:
     )
 
 
-# [5] FINAL MODEL - tuned LightGBM (EXP-014a)
+# [6] FINAL MODEL - tuned LightGBM (EXP-014a)
 def build_final_model() -> LGBMClassifier:
     """Tuned LightGBM, hyperparameters verbatim from the tuning phase."""
     return LGBMClassifier(**LGBM_FIXED_FLAGS, **TUNED_LGBM_PARAMS)
@@ -551,7 +706,7 @@ def build_pipeline() -> Pipeline:
                      ("model", build_final_model())])
 
 
-# [6] EVALUATION - stratified 10-fold CV, ROC-AUC, canonical folds
+# [7] EVALUATION - stratified 10-fold CV, ROC-AUC, canonical folds
 def make_folds() -> StratifiedKFold:
     """The one and only CV splitter (identical to every logged run)."""
     return StratifiedKFold(n_splits=N_SPLITS, shuffle=True,
@@ -616,7 +771,7 @@ def run_cv(X, y, pipe, folds) -> tuple[np.ndarray, np.ndarray, float]:
     return scores, oof, cv_s
 
 
-# [7] REPORTING
+# [8] REPORTING
 def build_report(mode: str, X, y, folds, fold_hash, scores, oof, cv_s,
                  clean_s, total_s, audit) -> tuple[list, np.ndarray]:
     """Assemble the console/file report lines + the EXP-014a delta table."""
@@ -751,7 +906,7 @@ def write_outputs(lines, folds, y, scores, deltas) -> None:
     print(f"[report] wrote {FOLD_SCORES_CSV}")
 
 
-# [8] MAIN
+# [9] MAIN
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="BRFSS 2021 GENHLTH binary classifier - final model "
@@ -771,6 +926,7 @@ def main() -> None:
 
     # ---- cleaning (from the immutable raw CSV) ----
     X, y, audit = build_dataset()
+    raw_codes = audit.pop("genhlth_raw")   # GENHLTH 1-5 codes for the EDA panel
 
     # ---- smoke subsample (verification only; full mode uses everything) --
     if mode == "smoke":
@@ -779,8 +935,12 @@ def main() -> None:
                                       random_state=RANDOM_STATE)
         X = X.iloc[sub_idx].reset_index(drop=True)
         y = y[sub_idx]
+        raw_codes = raw_codes[sub_idx]
         print(f"[main] smoke subsample: {len(y):,} rows "
               f"({int(y.sum()):,} positives = {100.0 * y.mean():.2f}%)")
+
+    # ---- exploratory profile of exactly the rows being modeled ----
+    run_eda(X, y, raw_codes, mode, n_raw=EXPECTED_RAW_ROWS)
 
     # ---- canonical folds ----
     folds, fold_hash = make_fold_list(X, y)

@@ -563,7 +563,7 @@ The recommendation rests on the full evidence chain, not one metric: whitelist-c
 
 ## 11. Ethics and Use of Generative AI
 
-This section is the mandatory final disclosure, drafted from the project's running AI-assistance log (22 entries, 2026-10-25 to 2026-11-08) and following the disclosure structure required by the course guidelines: tool used, purpose, and how the generated output was used in the final work.
+This section is the mandatory final disclosure, drafted from the project's running AI-assistance log (23 entries, 2026-10-25 to 2026-11-08) and following the disclosure structure required by the course guidelines: tool used, purpose, and how the generated output was used in the final work.
 
 **Statement of authorship.** Generative AI was used substantially and systematically throughout this project, and its use is disclosed here in full. All AI-generated contributions — plans, code, analysis, and prose — were reviewed by the student; methodological decisions were ratified through the project's decision-record process (ADRs 001–005), and every experimental number in this report is machine-traceable to `results/experiments_log.csv` or to a named committed artifact, independently of any AI-generated text. **Hassene Bouamama assumes responsibility for and authorship of the submitted work.**
 
@@ -571,7 +571,7 @@ This section is the mandatory final disclosure, drafted from the project's runni
 
 **Tool used.** The sole generative-AI tool was an **OpenCode coding agent** (model: GLM, by Z.ai), operated through a Claude-Code-style agentic harness inside the project repository. The agent worked in narrowly scoped roles (planning, implementation, analysis, reporting) under a written rulebook (`AGENTS.md`) that fixed the target, folds, seeds, metric and logging contract before any model was run; the student directed, reviewed and ratified its outputs at each milestone. No other generative-AI tools (ChatGPT, Copilot, Gemini, etc.) were used.
 
-**Full disclosure by log entry (all 22 entries, verbatim in substance):**
+**Full disclosure by log entry (all 23 entries, verbatim in substance):**
 
 | # | Date | Tool | Purpose | How the output was used |
 |---|------|------|---------|-------------------------|
@@ -597,6 +597,7 @@ This section is the mandatory final disclosure, drafted from the project's runni
 | 20 | 2026-11-08 | OpenCode agent (GLM, Z.ai) | Submission-day airing of this report: reformatted §1–§11 into short paragraphs/bullets with one citation per claim; author name filled; numeric freeze machine-verified (all numeric tokens, EXP ids, tables and figures unchanged) | Reformatted report reviewed by the student; compiled to report.pdf |
 | 21 | 2026-11-08 | OpenCode agent (GLM, Z.ai) | Screencast preparation: 9-slide deck (screencast_deck.pptx) from the logged results with speaker notes; rehearsal aid mapping each claim to the student-run verification | Student rehearsed with the deck and recorded the screencast |
 | 22 | 2026-11-08 | OpenCode agent (GLM, Z.ai) | Pre-submission claim-audit fixes from the student's critical review (12 items): statistical-scope wording, SMOTE/sklearn/booster overclaims, univariate-missingness claim, RandomForest-NaN justification (sklearn 1.9), POORHLTH reconciliation, "bimodal" softened, ALCDAY5 relabelled, H1 block wording, nested-CV budget caveat, family counting | Corrections applied to report.md and code.py labels; PDF rebuilt |
+| 23 | 2026-11-08 | OpenCode agent (GLM, Z.ai) | EDA stage added to code.py (target imbalance, missingness profile, top associations; regenerates the three core EDA figures in full mode) | Prompted by the student's pre-submission review of the deliverable code; smoke and full runs verified |
 
 **How AI assistance was bounded.** The rulebook made the *scientific* decisions human-ratified (ADRs) rather than agent-made. The append-only experiment log and per-run fold-hash assertions mean the report's numbers stand on the recorded runs, not on the agent's word. Interpretations from AI-assisted analysis are labeled as hypotheses in the project notes (FACT/INTERPRETATION discipline in the error-analysis note) and are presented as such in §9. This report itself was drafted by the agent role from the log and artifacts, then is to be reviewed and personalized by the student before submission.
 

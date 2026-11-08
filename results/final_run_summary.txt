@@ -1,6 +1,6 @@
 ========================================================================
 BRFSS 2021 GENHLTH binary classifier - FINAL MODEL (FULL run)
-run at 2026-11-02T19:34:05
+run at 2026-11-08T23:15:21
 ========================================================================
 
 [dataset]
@@ -53,7 +53,7 @@ run at 2026-11-02T19:34:05
   OOF recall (TPR) = 0.5356 | OOF precision = 0.7309
 
 [runtime]
-  load + clean: 8.6 s | 10-fold CV: 67.1 s | total: 76.1 s (1.3 min)
+  load + clean: 9.6 s | 10-fold CV: 69.7 s | total: 82.6 s (1.4 min)
 
 [environment]
   Python 3.13.7 | scikit-learn 1.9.1 | lightgbm 4.7.0 | pandas 2.3.0 | numpy 2.2.6

@@ -175,7 +175,7 @@ _WHITELIST_ROWS = (
     ("USENOW3", "NOM", ("sent", (7, 9))),
     ("ECIGNOW1", "NOM", ("sent", (7, 9))),
     # -- alcohol (Section 12) --
-    ("ALCDAY5", "ENG", ("alc",)),                  # decode to drinks/month
+    ("ALCDAY5", "ENG", ("alc",)),                  # decode to drinking days/month
     ("AVEDRNK3", "ENG", ("avedrnk",)),             # 88 none -> 0
     ("DRNK3GE5", "ENG", ("drnk",)),                # 88 none -> 0
     ("MAXDRNKS", "NUM", ("sent", (77, 99))),
@@ -312,7 +312,7 @@ def _recode_marj(s: pd.Series) -> pd.Series:
 
 
 def _recode_alc(s: pd.Series) -> pd.Series:
-    """ALCDAY5 -> drinks per month (float).
+    """ALCDAY5 -> drinking days per month (float).
 
     101-107 days/week -> (v-100) * 4.33; 201-230 days/past-30 -> v-200;
     888 = no drinks -> 0; 777/999 -> NaN; anything else -> NaN.

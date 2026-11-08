@@ -174,7 +174,7 @@ def main():
 
     r = subprocess.run(
         ['pandoc', str(body_md), '--from', 'markdown-implicit_figures', '--to', 'latex',
-         '--template', str(TPL), '--number-sections',
+         '--template', str(TPL), '--number-sections', '--shift-heading-level-by', '-1',
          '-V', f'title={title}', '-V', 'author=Hassene Bouamama',
          '-V', f'course={course}',
          '-V', 'date=November 2026 --- final draft v1.2 (compiled 2026-11-08)',

@@ -51,7 +51,7 @@ The work addresses every course learning objective:
 
 - managing and preprocessing a complex real-world clinical dataset;
 - framing the native multiclass problem as binary classification (ADR-001);
-- applying and comparing seven classifier families;
+- applying and comparing six classifier families plus a Dummy sanity floor;
 - robust evaluation — identical stratified 10-fold CV everywhere, Wilcoxon testing, nested CV;
 - feature engineering, selection and tuning to maximize ROC-AUC.
 
@@ -67,7 +67,7 @@ A direct empirical consequence: anything derived from `GENHLTH` is target leakag
 
 The leak columns `GENHLTH`, `_RFHLTH`, `_PHYS14D`, `_MENT14D` were therefore hard-excluded from the feature matrix (ADR-004/ADR-005). The matrix is built by **whitelist**, so a drop-list typo can never leak the target (§3).
 
-A subtler leakage question was resolved with data rather than decree (ADR-004). The Tier-3 "construct-suspicion" block — the health-days items `PHYSHLTH` (ρ = −0.293 pre-recode), `MENTHLTH` (ρ = −0.099), `POORHLTH` (ρ = −0.104, 50.8% coverage) — is strongly associated with the target, but none is *derived* from `GENHLTH`; each measures a distinct construct (days of poor physical/mental health; days of activity limitation).
+A subtler leakage question was resolved with data rather than decree (ADR-004). The Tier-3 "construct-suspicion" block — the health-days items `PHYSHLTH` (ρ = −0.293 pre-recode), `MENTHLTH` (ρ = −0.099), `POORHLTH` (ρ = −0.104; 48.0% blank, 50.8% effective coverage after sentinel recode) — is strongly associated with the target, but none is *derived* from `GENHLTH`; each measures a distinct construct (days of poor physical/mental health; days of activity limitation).
 
 The contrast case is instructive: `_RFHLTH`'s 100% agreement is what true target derivation looks like; ρ ≈ 0.3 is what a legitimately strong predictor looks like. All three were kept, with `POORHLTH`'s final fate left to empirical feature selection (ADR-004).
 
@@ -100,7 +100,7 @@ Raw data are immutable. The cleaned matrix is checkpointed once to `data/interim
 | Verdict | n | Examples / notes |
 |---|---|---|
 | KEEP-NOM (one-hot) | 54 | chronic-condition items, demographics, module survivors, `_STATE` (53 FIPS), `_RACE`, `QSTLANG`, `_URBSTAT` |
-| ENG (engineered numeric) | 15 | PHYSHLTH/MENTHLTH/POORHLTH (88→0), CHILDREN, ALCDAY5→drinks/month, AVEDRNK3/DRNK3GE5, MARIJAN1, 6 fruit-veg items→times/month, `_BMI5`÷100 |
+| ENG (engineered numeric) | 15 | PHYSHLTH/MENTHLTH/POORHLTH (88→0), CHILDREN, ALCDAY5→drinking-days/month, AVEDRNK3/DRNK3GE5, MARIJAN1, 6 fruit-veg items→times/month, `_BMI5`÷100 |
 | KEEP-ORD (ordinal) | 4 | CHECKUP1, EDUCA, INCOME3, `_SMOKER3` |
 | KEEP-NUM | 3 | JOINPAI2 (0–10), MAXDRNKS, `_AGE80` |
 | DROP-SPARSE | 86 | >90% blank+sentinel modules (hepatitis, HPV, shingles, caregiver detail, …) |
@@ -128,7 +128,7 @@ Consequently every column has a codebook-exact sentinel set, asserted post-recod
 
 The 88→0 recode is mandatory (ADR-004), and its importance is empirically measurable. On raw codes, `PHYSHLTH`'s Spearman ρ vs y is **−0.293**, because the "none" sentinel dominates the numeric range; after the recode it is **+0.450** — the strongest whitelist feature and ultimately the model's #1 driver (§4, §7, §9) (EXP-000). Treating sentinels as numbers would have handed every model an inverted health signal.
 
-**Missingness after recode and imputation.** Overall matrix missingness is **20.54%** (ADR-005), sharply bimodal: a core-survey mode (median column missingness 5.3%) and an optional-module mode up to 74.8% (`SOMALE`; `PREDIAB1` 74.0%) (`results/analysis/eda_notes.md` §2). Because module assignment is questionnaire design, missingness is structural.
+**Missingness after recode and imputation.** Overall matrix missingness is **20.54%** (ADR-005), concentrated in two regimes: a dense core-survey cluster (median column missingness 5.3%) and a long optional-module tail up to 74.8% (`SOMALE`; `PREDIAB1` 74.0%), with a few intermediate columns in between (`INCOME3` ≈ 21%, `TRNSGNDR` ≈ 44%, `POORHLTH` 48.0%) (`results/analysis/eda_notes.md` §2). Because module assignment is questionnaire design, missingness is structural.
 
 Imputation is therefore conservative and **fold-safe** — always fit on training folds only inside the CV pipeline: most-frequent imputation + one-hot for nominal columns, median for ordinal/numeric/engineered (EXP-001..003 setup).
 
@@ -150,7 +150,7 @@ EDA was run on matrix v1 (437,532 valid rows × 76 columns) by the data-analyst 
 
 ![**Figure 1 — Target distribution.** (a) Raw GENHLTH classes; (b) binary target y (16.63% Fair/Poor, 1 : 5.0). Source: results/analysis/eda_notes.md §1, data per EXP-000.](../../figures/eda_target_imbalance.png)
 
-**Missingness (Figure 2).** Per-column missingness is bimodal — core survey (< 15%) vs optional modules (57–75%) — with median 5.3%. Four columns are fully complete (`SEXVAR`, `QSTLANG`, `_STATE`, `_AGE80`); 21 columns are > 25% and 19 > 50% missing.
+**Missingness (Figure 2).** Per-column missingness concentrates at the two ends — core survey (< 15%) vs optional modules (57–75%) — with a handful of intermediates (`INCOME3` ≈ 21%, `TRNSGNDR` ≈ 44%, `POORHLTH` 48.0%); median 5.3%. Four columns are fully complete (`SEXVAR`, `QSTLANG`, `_STATE`, `_AGE80`); 21 columns are > 25% and 19 > 50% missing.
 
 Two of the strongest single predictors sit in the high-missingness regime (`JOINPAI2` 68.1%, `POORHLTH` 48.0%), so their imputed values deserve extra distrust — a fact that later shaped the NaN-passthrough choice (§6) and the interpretation of case B (§9).
 
@@ -251,11 +251,11 @@ The best single tree still loses to regularized linearity by 0.0124 AUC (0.88020
 
 ## 6. Model zoo & imbalance handling
 
-**Model zoo (P4 protocol: one sensible config per family, tuning deferred to §8).** All runs use all-76 features and the canonical folds. Random Forest keeps the impute preprocessor (it cannot split NaN).
+**Model zoo (P4 protocol: one sensible config per family, tuning deferred to §8).** All runs use all-76 features and the canonical folds. Random Forest kept the impute preprocessor as a uniform-pipeline choice (scikit-learn ≥ 1.4 can route NaN natively in trees, so this was convention rather than necessity on the pinned 1.9.1).
 
 The three boosters use **NaN-passthrough**. It was verified on sklearn 1.9.1 that `OneHotEncoder(handle_unknown='ignore')` encodes NaN as its own category (51/54 NOM columns carry NaN) and that HistGB/LightGBM/XGBoost route NaN natively at split time (EXP-005..007).
 
-**Table 6 — The seven-family zoo, identical folds (fold SHA 3b3a17457039 asserted in every row).**
+**Table 6 — The zoo: six families + the Dummy floor, seven configurations, identical folds (fold SHA 3b3a17457039 asserted in every row).**
 
 | exp_id | Model | Key config | mean CV ROC-AUC ± fold std | runtime |
 |---|---|---|---|---|
@@ -270,7 +270,7 @@ The three boosters use **NaN-passthrough**. It was verified on sklearn 1.9.1 tha
 Three findings:
 
 - **Boosting, not ensembling per se, is the win.** RandomForest (bagging) adds only +0.00073 over LogReg — under half a fold std, a statistical tie — at the worst cost in the zoo (351.5 s, 2.5× XGBoost, 8.5× LightGBM); decorrelated `sqrt`-feature trees are individually too weak on wide one-hot survey data (EXP-004).
-- **The booster trio clears every sklearn model by a real margin:** 0.9032–0.9034 vs 0.8933 at best for sklearn — a +0.011 gain over the linear/bagging families, ≈ 6× the fold std (e.g. XGB vs LogReg: +0.010769 ≈ 6.3× std, EXP-007 note). Within the trio the spread is ≤ 0.00014 (XGB vs LGBM: 0.000002; vs HistGB: 0.00014) — statistically indistinguishable; XGBoost took the family-A slot only by the zoo's deterministic tie-break.
+- **The booster trio clears the linear and bagging baselines by a real margin:** 0.9032–0.9034 vs 0.8933 at best among LogReg/RandomForest — a +0.011 gain, ≈ 6× the fold std (e.g. XGB vs LogReg: +0.010769 ≈ 6.3× std, EXP-007 note). HistGradientBoosting is itself a scikit-learn model; the specialized libraries (LightGBM, XGBoost) edge it by ≤ 0.00014 — a statistical tie, not a clear. Within the trio the spread is ≤ 0.00014; XGBoost took the family-A slot only by the zoo's deterministic tie-break.
 - **LightGBM has the best accuracy/cost ratio** (41.4 s), which matters for the compute-heavy search in §8.
 
 The NaN-passthrough result is itself a finding: the boosters ran with *zero imputation*, keeping module missingness as signal — a core reason this family suits sparse survey data (EXP-005..007).
@@ -292,7 +292,7 @@ Details worth recording:
 - SMOTE used sampling_strategy 0.5 because a 1:1 rebalance would synthesize 262,846 rows per fold (393,778 → 656,624) vs 98,690 at 0.5 (EXP-009 note);
 - RUS drops the per-fold majority class 328,312 → 130,932 rows (393,778 → 196,398) (EXP-010 note).
 
-**Verdict: `imbalance_strategy = none` for the AUC objective.** Class weighting and undersampling move AUC by at most 0.00045 (≈ 0.3× fold std, both directions). SMOTE is the *worst* strategy on both families — the only P4 configuration where a booster loses ~2× fold std (−0.00355) and the only run of the entire zoo to lose to the plain LogReg baseline (EXP-009b, −0.00417).
+**Verdict: `imbalance_strategy = none` for the AUC objective.** Class weighting and undersampling move AUC by at most 0.00045 (≈ 0.3× fold std, both directions). SMOTE is the *worst* strategy on both families — the only P4 imbalance configuration where a booster loses ~2× fold std (−0.00355) and the only configuration of the entire imbalance study to fall below the plain LogReg baseline it was meant to improve (EXP-009b, −0.00417).
 
 The reason is the metric, not the implementations: **ROC-AUC is threshold-free and rank-based.** Reweighting and resampling reshape the class prior and move the implicit operating point, but they do not improve the *ranking* of positives above negatives — which is all AUC measures. SMOTE additionally blurs the boundary with synthetic interpolated minority points (EXP-008..010 verdicts).
 
@@ -306,7 +306,7 @@ P5 asked three questions with one protocol. Every selection, importance and proj
 
 **Hypothesis H1 (stated before the subset experiments, coordinator-approved; EXP-012):**
 
-> *The model's predictive power concentrates in five blocks: B1 functional limitation/disability (DIFFWALK, DIFFALON, DIFFDRES, DECIDE, DEAF, BLIND); B2 health days (PHYSHLTH, MENTHLTH, POORHLTH); B3 joint pain/arthritis (JOINPAI2, LMTJOIN3, HAVARTH5, ARTHDIS2, ARTHEXER); B4 chronic conditions (DIABETE4, BPHIGH6, TOLDHI3, CHOLMED3, CVDINFR4, CVDCRHD4, CVDSTRK3, ASTHMA3, ASTHNOW, CHCSCNCR, CHCOCNCR, CHCCOPD3, ADDEPEV3, CHCKDNY2); B5 socio-demographics (_AGE80, INCOME3, EDUCA, EMPLOY1, MARITAL, _RACE, SEXVAR, _BMI5, _SMOKER3). A compact subset of these ~35 columns should match all-76 within fold noise; the complement (diet, screening, state, remaining module vars) contributes little.*
+> *The model's predictive power concentrates in five blocks: B1 functional limitation/disability (DIFFWALK, DIFFALON, DIFFDRES, DECIDE, DEAF, BLIND); B2 health days (PHYSHLTH, MENTHLTH, POORHLTH); B3 joint pain/arthritis (JOINPAI2, LMTJOIN3, HAVARTH5, ARTHDIS2, ARTHEXER); B4 chronic conditions (DIABETE4, BPHIGH6, TOLDHI3, CHOLMED3, CVDINFR4, CVDCRHD4, CVDSTRK3, ASTHMA3, ASTHNOW, CHCSCNCR, CHCOCNCR, CHCCOPD3, ADDEPEV3, CHCKDNY2); B5 socio-demographic and lifestyle factors (_AGE80, INCOME3, EDUCA, EMPLOY1, MARITAL, _RACE, SEXVAR, and the lifestyle members _BMI5, _SMOKER3). A compact subset of these ~35 columns should match all-76 within fold noise; the complement (diet, screening, state, remaining module vars) should add little *on top of the blocks* — its standalone signal may be substantial.*
 
 The hypothesis is grounded in EDA (§4 block ranking: health days and functional limitation carry ~2× the marginal signal of chronic conditions) rather than in post-hoc rationalization.
 
@@ -333,7 +333,7 @@ The mechanism: MI is univariate, so it drops correlated-but-useful columns that 
 | 9 | EXERANY2 | other | 1.56% |
 | 10 | MENTHLTH | B2 | 1.53% |
 
-Gain is extraordinarily concentrated — one column carries half of it — and sits overwhelmingly inside the H1 blocks. Block shares: B2 **55.0%**, B5 11.7%, B4 10.6%, B1 10.1%, other 11.4%, B3 1.2%; 9 of the top-10 gain columns are in H1-36 (EXP-011/012).
+Gain is extraordinarily concentrated — one column carries half of it — and sits overwhelmingly inside the H1 blocks. Block shares: B2 **55.0%**, B5 11.7%, B4 10.6%, B1 10.1%, other 11.4%, B3 1.2% — B3 (joint pain/arthritis) was overweighted by the hypothesis: its standalone association (§4) largely did not survive competition with B2's health days. 9 of the top-10 gain columns are in H1-36 (EXP-011/012).
 
 The two importance notions disagree at the top, exactly as different methods should: MI ∩ gain overlap is 3/10 at top-10, 13/30 at top-30 (EXP-011) — MI ranks coverage-rich items higher, gain ranks split-useful items higher.
 
@@ -400,7 +400,7 @@ Compute-budget levers were documented, not silent. A timing probe plus P4-calibr
 
 **Nested cross-validation: the unbiased estimate (EXP-015).** Because the search saw the full X,y, the Part-1 numbers carry selection bias by construction — exactly what nested CV prices in. Outer loop = the canonical 10 folds (SHA-asserted); inner = `RandomizedSearchCV(n_iter=12, StratifiedKFold(3, rs=42), roc_auc)` refit per outer fold on the outer *training* fold only. Result: **0.904303 ± 0.001700**.
 
-The optimism of the non-nested estimate is **+0.000018** (0.904321 − 0.904303) — negligible: with 437,532 rows and a narrow, regularized space, inner-CV selection is nearly deterministic across resamples (7/10 outer folds re-selected the Part-1 winner). Against the untuned EXP-006 baseline the nested tuned gain survives at +0.000949.
+The optimism of the non-nested estimate is **+0.000018** (0.904321 − 0.904303) — negligible: with 437,532 rows and a narrow, regularized space, inner-CV selection is nearly deterministic across resamples. Note the two procedures differ by design: the inner search was deliberately smaller than Part-1's (12 candidates × 3 inner folds vs 15 × 5), so "7/10 outer folds re-selected the Part-1 winner" compares winners of different-budget searches — and stability held anyway. Against the untuned EXP-006 baseline the nested tuned gain survives at +0.000949.
 
 The report therefore quotes both numbers with distinct meanings: **0.904321** (EXP-014a) is the canonical-folds tuned result, comparable to every other log row; **0.904303** (EXP-015) is the selection-bias-free estimate.
 
@@ -486,9 +486,9 @@ Known caveat, stated rather than hidden: path-dependent TreeExplainer spreads cr
 
 **Recommended model: the tuned LightGBM pipeline of EXP-014a** — all-76 matrix v1 features, NaN-passthrough preprocessing, `LGBMClassifier(n_estimators=512, learning_rate=0.0219, num_leaves=94, min_child_samples=44, subsample=0.8159, colsample_bytree=0.5980, reg_lambda=3.123, subsample_freq=1, random_state=42)`.
 
-Mean CV ROC-AUC **0.9043 ± 0.0017** on the canonical folds; selection-bias-free nested estimate **0.9043 ± 0.0017** (EXP-015, 0.904303; the two agree to +0.000018). It is significantly better than every alternative tested (Wilcoxon T1–T3, all p = 0.001953 at the n=10 floor) and the fastest of the competitive models (41.4 s per CV run untuned; 69.9 s tuned, vs RF's 351.5 s).
+Mean CV ROC-AUC **0.9043 ± 0.0017** on the canonical folds; selection-bias-free nested estimate **0.9043 ± 0.0017** (EXP-015, 0.904303; the two agree to +0.000018). It is statistically significantly better than the three alternatives it was formally tested against — its tuned XGBoost runner-up (T1), its own untuned configuration (T2), and the tuned linear baseline (T3; Wilcoxon, all p = 0.001953, the n = 10 floor). Because the ten CV folds overlap, these paired p-values are optimistic and are read here as strong evidence, not proof. The untested families trail by clear margins — RandomForest by +0.011 and the single tree by +0.024, many times the fold noise — while HistGradientBoosting and untuned XGBoost sit within ~0.001 and were not formally tested. It is also the fastest of the competitive models (41.4 s per CV run untuned; 69.9 s tuned, vs RF's 351.5 s).
 
-The recommendation rests on the full evidence chain, not one metric: whitelist-controlled data (ADR-005) → measured 0.5 floor (EXP-001) → tuned linear/tree baselines (EXP-002/003) → seven-family zoo with identical folds (EXP-004..007) → imbalance verdict "none" with a metric-level rationale (EXP-008..010) → selection/hypothesis/PCA all answered honestly (EXP-011..013) → automated search + nested CV + significance tests (EXP-014/015).
+The recommendation rests on the full evidence chain, not one metric: whitelist-controlled data (ADR-005) → measured 0.5 floor (EXP-001) → tuned linear/tree baselines (EXP-002/003) → six-family zoo with identical folds (EXP-004..007) → imbalance verdict "none" with a metric-level rationale (EXP-008..010) → selection/hypothesis/PCA all answered honestly (EXP-011..013) → automated search + nested CV + significance tests (EXP-014/015).
 
 **What mattered, in order of effect size:**
 
@@ -509,7 +509,7 @@ The recommendation rests on the full evidence chain, not one metric: whitelist-c
 
 - *Boundary ambiguity*: 88.2% of errors sit at the binarized 3|4 edge; a GENHLTH=4 rater with a near-identical covariate vector to a GENHLTH=3 rater plausibly exists (Case C), so the residual error is substantially aleatoric.
 - *Self-report labels and features*: both target and top predictors are self-reported; the model inherits response shift, response style and recall bias (Case A).
-- *Module missingness*: the strongest univariate predictors sit in 48–68%-missing modules; imputed or NaN-routed, their signal is conditional on questionnaire design.
+- *Module missingness*: two of the five strongest univariate predictors (`JOINPAI2` 68.1% missing, `POORHLTH` 48.0%) sit in high-missingness items, while the two strongest (`PHYSHLTH`, `DIFFWALK`) are near-complete core questions; imputed or NaN-routed, the high-missingness columns' signal is conditional on questionnaire design.
 - *No causal claims*: this is associative prediction on a cross-sectional survey; a deployed system would additionally need calibration, subgroup fairness audits and a purpose-chosen threshold (Table 15 offers the menu).
 
 **What would help:** modeling GENHLTH at the ordinal level (e.g. ordinal regression / ordinal-aware objectives) instead of discarding the 1–5 ordering; richer mental-health and wellbeing constructs (the error floor of Case B is exactly the missing construct); and cost-sensitive thresholds tied to a real use case.
@@ -563,7 +563,7 @@ The recommendation rests on the full evidence chain, not one metric: whitelist-c
 
 ## 11. Ethics and Use of Generative AI
 
-This section is the mandatory final disclosure, drafted from the project's running AI-assistance log (21 entries, 2026-10-25 to 2026-11-08) and following the disclosure structure required by the course guidelines: tool used, purpose, and how the generated output was used in the final work.
+This section is the mandatory final disclosure, drafted from the project's running AI-assistance log (22 entries, 2026-10-25 to 2026-11-08) and following the disclosure structure required by the course guidelines: tool used, purpose, and how the generated output was used in the final work.
 
 **Statement of authorship.** Generative AI was used substantially and systematically throughout this project, and its use is disclosed here in full. All AI-generated contributions — plans, code, analysis, and prose — were reviewed by the student; methodological decisions were ratified through the project's decision-record process (ADRs 001–005), and every experimental number in this report is machine-traceable to `results/experiments_log.csv` or to a named committed artifact, independently of any AI-generated text. **Hassene Bouamama assumes responsibility for and authorship of the submitted work.**
 
@@ -571,7 +571,7 @@ This section is the mandatory final disclosure, drafted from the project's runni
 
 **Tool used.** The sole generative-AI tool was an **OpenCode coding agent** (model: GLM, by Z.ai), operated through a Claude-Code-style agentic harness inside the project repository. The agent worked in narrowly scoped roles (planning, implementation, analysis, reporting) under a written rulebook (`AGENTS.md`) that fixed the target, folds, seeds, metric and logging contract before any model was run; the student directed, reviewed and ratified its outputs at each milestone. No other generative-AI tools (ChatGPT, Copilot, Gemini, etc.) were used.
 
-**Full disclosure by log entry (all 21 entries, verbatim in substance):**
+**Full disclosure by log entry (all 22 entries, verbatim in substance):**
 
 | # | Date | Tool | Purpose | How the output was used |
 |---|------|------|---------|-------------------------|
@@ -596,6 +596,7 @@ This section is the mandatory final disclosure, drafted from the project's runni
 | 19 | 2026-11-08 | OpenCode agent (GLM, Z.ai) | Submission-day polish of deliverables/code.py: comment-only restyle (compact header, concise section banners); token-skeleton verification proved zero executable changes; --smoke run re-passed end-to-end | Restyled code.py reviewed by the student and verified before submission |
 | 20 | 2026-11-08 | OpenCode agent (GLM, Z.ai) | Submission-day airing of this report: reformatted §1–§11 into short paragraphs/bullets with one citation per claim; author name filled; numeric freeze machine-verified (all numeric tokens, EXP ids, tables and figures unchanged) | Reformatted report reviewed by the student; compiled to report.pdf |
 | 21 | 2026-11-08 | OpenCode agent (GLM, Z.ai) | Screencast preparation: 9-slide deck (screencast_deck.pptx) from the logged results with speaker notes; rehearsal aid mapping each claim to the student-run verification | Student rehearsed with the deck and recorded the screencast |
+| 22 | 2026-11-08 | OpenCode agent (GLM, Z.ai) | Pre-submission claim-audit fixes from the student's critical review (12 items): statistical-scope wording, SMOTE/sklearn/booster overclaims, univariate-missingness claim, RandomForest-NaN justification (sklearn 1.9), POORHLTH reconciliation, "bimodal" softened, ALCDAY5 relabelled, H1 block wording, nested-CV budget caveat, family counting | Corrections applied to report.md and code.py labels; PDF rebuilt |
 
 **How AI assistance was bounded.** The rulebook made the *scientific* decisions human-ratified (ADRs) rather than agent-made. The append-only experiment log and per-run fold-hash assertions mean the report's numbers stand on the recorded runs, not on the agent's word. Interpretations from AI-assisted analysis are labeled as hypotheses in the project notes (FACT/INTERPRETATION discipline in the error-analysis note) and are presented as such in §9. This report itself was drafted by the agent role from the log and artifacts, then is to be reviewed and personalized by the student before submission.
 

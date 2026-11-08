@@ -2,6 +2,10 @@
 data/raw/
 data/interim/
 
+# ---- ml_fp2 rebuild: same data rules ----
+ml_fp2/data/raw/
+ml_fp2/data/interim/
+
 # ---- Large local-only reference files ----
 docs/codebook.pdf
 

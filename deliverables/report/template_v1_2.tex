@@ -1,0 +1,34 @@
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setmonofont{Consolas}
+\usepackage{graphicx}
+\setkeys{Gin}{width=0.9\linewidth,height=0.72\textheight,keepaspectratio}
+\usepackage{longtable,booktabs,array,etoolbox,calc}
+\AtBeginEnvironment{longtable}{\footnotesize}
+\usepackage{enumitem}
+\setlist{topsep=3pt,itemsep=2pt,parsep=0pt}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\itshape BRFSS 2021 --- Fair/Poor Health Prediction}
+\fancyhead[R]{\small\sffamily v1.2}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!45!black,urlcolor=blue!45!black]{hyperref}
+\setlength{\emergencystretch}{3em}
+\setlength{\parskip}{4pt plus 2pt}
+\widowpenalty=10000
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+\providecommand{\pandocbounded}[1]{#1}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries $title$}\par\vspace{0.9em}
+{\large $author$}\par\vspace{0.35em}
+{\small\itshape $date$}\par\vspace{0.25em}
+\rule{0.6\linewidth}{0.4pt}
+\end{center}
+$body$
+\end{document}

@@ -4,7 +4,7 @@
 
 Machine Learning — Final Project (C2 call)
 Author: Hassene Bouamama
-Date: November 8, 2026
+Date: November 9, 2026
 
 > **Abstract.** We build a binary classifier on the CDC Behavioral Risk Factor Surveillance System (BRFSS) 2021 landline/cell survey (438,693 respondents, 303 raw columns). The target is self-reported general health: respondents rating their health *Fair* or *Poor* (GENHLTH ∈ {4,5}, 16.63% of labeled rows) form the positive class; *Excellent/Very good/Good* form the negative class. After a leakage audit, a six-rule column triage (303 → 76 columns), per-column sentinel recoding from the codebook, and one-hot encoding, we compare Dummy, Logistic Regression, Decision Tree, Random Forest, and three gradient-boosting implementations under a single fixed 10-fold split, and test class weighting and SMOTE against the class imbalance. The final model is a tuned LightGBM: mean ROC-AUC 0.903672 on the fixed folds (EXP-020), statistically tied with tuned XGBoost, confirmed by nested CV, and explained with SHAP. Every number in this report cites an experiment id traceable to `experiments.csv`; facts about the data cite the project notebook (`notebooks/BRFSS_project.ipynb`), which is the single source of truth for methods.
 
@@ -117,7 +117,7 @@ Three decisions inside this funnel deserve justification:
 - **Duplicates: keep the raw, drop the computed twin.** Where a CDC column is a deterministic recode of a raw item (example in §4.2), keeping both adds no information, inflates dimensionality, and double-counts one question in distance/regularization terms. We prefer the raw item, with one exception: `_SMOKER3` (4-level ordinal) is kept over its raw pair because its ordinal coding compresses `SMOKE100`+`SMOKDAY2` without information loss.
 - **Keep-list, not drop-list.** The design matrix is built *by whitelist*, not by dropping. A typo in a keep-list loses a column (harmless, and caught by assertions); a typo in a drop-list leaks the target (silent corruption). The whitelist is the *output* of this section, never an input.
 
-**Independent verification.** The funnel's keep-set was cross-checked against a triage of the same data performed earlier and independently by a different pass: **keep-set match = True (76 shared, 0 only-ours, 0 only-v1)** (notebook §3, verification cell). The independent record is used *only* as a final cross-check, never as an input to the rules.
+**Independent verification.** The funnel's keep-set was cross-checked against a triage of the same data performed earlier and independently by a different pass: **keep-set match = True (76 shared, 0 unique to ours, 0 unique to the earlier triage)** (notebook §3, verification cell). The independent record is used *only* as a final cross-check, never as an input to the rules.
 
 Table 3 — The 76 survivors by role (notebook §3.1).
 
@@ -235,7 +235,7 @@ Per model, everything that *estimates from data* — median imputation, standard
 
 ### 5.4 The experiment log
 
-`experiments.csv` — the canonical experiment log for this project — is append-only: one row per run with `exp_id`, timestamp, model, parameters, the ten fold AUCs, and their mean and standard deviation (notebook §5.1, `run_cv`). **Every model number in this report cites its EXP id.** The baseline block (EXP-001..007) was executed three times over the course of development: three independent re-runs produced **bit-identical fold scores** (the duplicate rows this created were later removed from the log; since the values matched exactly, nothing changed). That is our determinism evidence — reproducibility demonstrated, not assumed — that the seed and splitter discipline actually hold.
+`experiments.csv` — the canonical experiment log for this project — holds one row per experiment: `exp_id`, timestamp, model, parameters, the ten fold AUCs, and their mean and standard deviation (notebook §5.1, `run_cv`). A re-run of the same experiment refreshes its row in place rather than appending a duplicate. **Every model number in this report cites its EXP id.** The baseline block (EXP-001..007) was executed three times over the course of development: three independent re-runs produced **bit-identical fold scores** (the duplicate rows this created were later removed from the log; since the values matched exactly, nothing changed). A later end-to-end re-run of the exported `code.py` reproduced every logged fold score bit-identically as well (EXP-001..021 in one execution; the nested-CV row EXP-022 — the longest stage — in a separate re-execution). That is our determinism evidence — reproducibility demonstrated, not assumed — that the seed and splitter discipline actually hold.
 
 ---
 
@@ -273,7 +273,7 @@ Takeaway: ranking quality is high already for a linear model, single trees need 
 
 ### 7.1 Four ensembles
 
-We add bagging and boosting to exceed the rubric's five-classifier requirement (notebook §6): Random Forest (300 trees, `min_samples_leaf=20`, median-imputed input), and three gradient boosters which accept NaN natively — scikit-learn HistGB (300 iterations, lr 0.05), LightGBM (500 trees, lr 0.05, 63 leaves), and XGBoost (500 trees, lr 0.05, depth 6).
+We add bagging and boosting to exceed the rubric's five-classifier requirement (notebook §6): Random Forest (300 trees, `min_samples_leaf=20`, median-imputed input — kept for pipeline uniformity with the linear baselines; recent scikit-learn can route NaN in trees natively), and three gradient boosters which accept NaN natively — scikit-learn HistGB (300 iterations, lr 0.05), LightGBM (500 trees, lr 0.05, 63 leaves), and XGBoost (500 trees, lr 0.05, depth 6).
 
 Table 7 — Model zoo and imbalance variants, ROC-AUC over the fixed 10 folds (source: `experiments.csv`).
 
@@ -375,7 +375,7 @@ Table 9 — Tuned vs default, canonical 10 folds (source: `experiments.csv`).
 
 ### 9.2 Wilcoxon signed-rank tests
 
-Because every model is scored on the *same* ten folds (§5.1), fold scores pair up directly and the exact paired Wilcoxon signed-rank test applies. With n = 10 pairs, the smallest two-sided p the test can produce is 0.002 — an all-ten-fold sweep.
+Because every model is scored on the *same* ten folds (§5.1), fold scores pair up directly and the exact paired Wilcoxon signed-rank test applies. With n = 10 pairs, the smallest two-sided p the test can produce is 0.002 — an all-ten-fold sweep. One caveat: the ten folds overlap (every respondent appears in exactly one test fold but in nine training sets), so these paired p-values are optimistic, and we read them as strong evidence rather than proof.
 
 Table 10 — Paired comparisons on the 10 canonical folds (fold scores from `experiments.csv`).
 
@@ -393,7 +393,7 @@ Table 10 — Paired comparisons on the 10 canonical folds (fold scores from `exp
 
 ### 9.3 Nested CV — is the tuned score optimistic?
 
-A nested CV (EXP-022) re-ran the selection honestly: inside each of the 10 outer folds, a fresh `RandomizedSearchCV` (n_iter=4 × 3 inner folds, seed 42) re-selected hyperparameters, and the outer fold scored the refit winner. Result: **0.903672 ± 0.001762** — identical to the non-nested tuned score (EXP-020), i.e. selection optimism −0.000000.
+A nested CV (EXP-022) re-ran the selection honestly: inside each of the 10 outer folds, a fresh `RandomizedSearchCV` (n_iter=4 × 3 inner folds, seed 42 — a deliberately smaller budget than the Section 9.1 search) re-selected hyperparameters, and the outer fold scored the refit winner. Result: **0.903672 ± 0.001762** — identical to the non-nested tuned score (EXP-020), i.e. selection optimism −0.000000.
 
 An exactly-zero optimism looks suspicious until the mechanism is stated: the inner searches re-selected the **same configuration in all 10 outer folds**, so the nested procedure refit the same models on the same folds as EXP-020 and returned bit-identical fold scores. The correct reading is not "no bias is possible" but "at this search budget the space has a clear optimum, the inner searches converge to it from every training subset, and the reported 0.903672 carries no selection-induced optimism." Had different outer folds selected different configurations, the nested score would have fallen below the non-nested one; it did not.
 
@@ -465,7 +465,7 @@ The ranking echoes the gain importances of Section 8: `PHYSHLTH` first by a fact
 
 **What is established** (every number traces to `experiments.csv`):
 
-1. **The problem was made tractable and honest by construction.** One binary target definition (16.63% positive, Table 1), one fixed stratified 10-fold split with seed 42 for every experiment (§5.1), one append-only experiment log as the source of every reported number (§5.4), and demonstrated determinism — three independent re-runs of the baseline block produced bit-identical fold scores.
+1. **The problem was made tractable and honest by construction.** One binary target definition (16.63% positive, Table 1), one fixed stratified 10-fold split with seed 42 for every experiment (§5.1), one canonical experiment log as the source of every reported number (§5.4), and demonstrated determinism — independent re-runs of the baseline block produced bit-identical fold scores.
 2. **Disciplined triage cut 303 raw columns to 76** with written rules and empirical evidence — removing four outright leaks (including `_RFHLTH`, a 100% copy of the target), 65 deterministic duplicates, and 123 unusable columns — verified against an independent triage with a 76/76 keep-set match (§3.2).
 3. **Baselines bracketed the problem.** Dummy 0.500 (floor), LogReg 0.8935 (the signal is largely additive — and insensitive to C), pruned single tree 0.8813 (nonlinearity alone does not beat linear here) (Table 6).
 4. **Ensembles: the algorithm family is what matters.** Boosting adds ≈ +0.010 over linear (0.9033–0.9034, EXP-009..011); bagging adds ≈ +0.002 (EXP-008) (Table 7).
@@ -515,11 +515,13 @@ Course policy requires an accurate statement of any assistance received, human o
 | 2026-11-08 | OpenCode agent (GLM model) | Added Section 9 (error analysis & XAI): OOF probabilities from tuned winner on canonical folds, error taxonomy by true GENHLTH class + figure, 3 archetype cases (confident FP/FN, fence) profiled vs population medians, SHAP TreeExplainer global importance (dummy-to-parent aggregation) + 3 local waterfalls | Student runs Section 9; outputs fill report Section 10 |
 | 2026-11-08 | OpenCode agent (GLM model) | Drafted this technical report from the notebook, the experiment log, and the triage record | Student reviews, verifies every cited number against sources, and finalizes |
 | 2026-11-08 | OpenCode agent (GLM model) | Filled report Sections 7-11 with the final verified numbers (EXP-014..EXP-022), the error-case profiles, the SHAP readings, and the statistical-test interpretations; refreshed Section 12 from the current assistance log | Student verifies each cited number against experiments.csv and the notebook before submission |
+| 2026-11-09 | OpenCode agent (GLM model) | Completion and verification pass: code.py cleaned (stale section-10 notes removed, path-robust docstring, closing summary, expectation notes replaced with actual findings) and re-run end-to-end — EXP-001..021 reproduced bit-identically (the run exceeded a 60-minute harness timeout during the nested-CV stage, whose EXP-022 was then re-executed standalone with identical fold scores); report numbers audit: every AUC-range literal traced to experiments.csv, and the Section 8/9 numbers (Wilcoxon table, OOF AUC, error taxonomy, case rows and probabilities, SHAP top-12) recomputed from the interim checkpoints by a standalone script — all matched; prose fixes applied (experiment-log semantics, Wilcoxon optimism caveat, nested-search budget note, RF imputation rationale, date refresh) | Student reviews the audit trail; corrections adopted verbatim into report.md |
+| 2026-11-09 | OpenCode agent (GLM model) | LaTeX report build ported from the v1 template (11pt Latin Modern article, TOC, auto-numbered sections, unbreakable small tables); screencast assets written from the verified v2 numbers (6-beat script, deck prompt, v2 cheat sheet with the v1-vs-v2 number traps) | Student rehearses from the v2 script and records the screencast from the deck it describes |
 
 
 ### 12.2 Statement of responsibility
 
-**Tool used:** OpenCode (agentic coding assistant running the GLM large language model), used across the whole project timeline (2026-11-07/08).
+**Tool used:** OpenCode (agentic coding assistant running the GLM large language model), used across the whole project timeline (2026-11-07/09).
 
 **Purpose:** (1) understanding ML concepts (stratified CV, ROC-AUC, leakage, SMOTE); (2) generating and structuring notebook code (preprocessing, triage rules, sentinel dictionaries, model pipelines, experiment logging, figures); (3) debugging (fixes for the GENHLTH sentinel filter and re-run-safety of rule 5, both originating from the student's own error reports); (4) drafting and structuring this report; (5) filling its final sections with the verified experiment numbers and interpreting the tuning statistics, the error analysis, and the SHAP output.
 

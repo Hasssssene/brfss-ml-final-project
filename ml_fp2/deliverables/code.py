@@ -7,7 +7,8 @@ End-to-end pipeline, exported from notebooks/BRFSS_project.ipynb:
 
 Every random component is seeded with RANDOM_STATE = 42; evaluation is
 ROC-AUC under StratifiedKFold(10, shuffle=True, random_state=42).
-Run from the repository's notebooks/ directory (or adjust paths).
+Paths resolve relative to this file, so it runs from any working
+directory (data/ and figures/ live two levels up from deliverables/).
 """
 #!/usr/bin/env python
 # coding: utf-8
@@ -27,7 +28,6 @@ Run from the repository's notebooks/ directory (or adjust paths).
 # | 7 | Feature selection & hypothesis |
 # | 8 | Tuning (RandomizedSearch) + Wilcoxon + nested CV |
 # | 9 | Error analysis & XAI (SHAP) |
-# | 10 | deliverables assembly (to come) |
 
 # ## SECTION 1 — Setup & first look
 # 
@@ -47,7 +47,7 @@ import matplotlib.pyplot as plt
 RANDOM_STATE = 42
 N_SPLITS = 10
 
-# local repo by default; Google Colab also works (data/figures on Drive)
+# local repo by default (paths relative to this file); Colab branch mirrors the notebook workflow
 IN_COLAB = 'google.colab' in sys.modules
 if IN_COLAB:
     from google.colab import drive
@@ -745,7 +745,7 @@ plt.savefig(f'{FIG_DIR}/fig03_baselines.png', dpi=150); plt.show()
 from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 
 rf = Pipeline([
-    ('impute', SimpleImputer(strategy='median')),      # sklearn RF needs complete input
+    ('impute', SimpleImputer(strategy='median')),      # uniform pipeline (sklearn can route NaN in trees since 1.4)
     ('rf', RandomForestClassifier(n_estimators=300, min_samples_leaf=20,
                                   n_jobs=1, random_state=RANDOM_STATE)),
 ])
@@ -972,7 +972,7 @@ print(exp[['exp_id', 'model', 'params', 'mean_auc', 'std_auc']].to_string(index=
 
 # ## Findings & next
 # 
-# - Expected: `PHYSHLTH` dominates gain; H1 subset ≈ all-76 − ~0.003 (hypothesis nearly confirmed); complement alone much lower but non-trivial; KBest ≤ all-76 (honest negative — automatic selection can't beat the full matrix here); PCA clearly worse (it smears one-hot structure into continuous mush).
+# - Found: `PHYSHLTH` dominates gain (~52%); H1 39-col subset keeps 99.5% of AUC (−0.0045 — hypothesis nearly confirmed); complement alone 0.781 (real but redundant); KBest 0.8997, still below all-76 (honest negative — automatic selection can't beat the full matrix here); PCA loses ~0.02 (it smears one-hot structure into continuous mush).
 # - Verdict: keep all-76 for tuning.
 # 
 # **Section 8 — Tuning & statistics:** RandomizedSearchCV on the top family + Wilcoxon signed-rank on the top-2 models (identical folds → paired test valid).
@@ -1076,7 +1076,7 @@ print(f'optimism vs non-nested tuned: {nested_scores.mean() - exp.loc["EXP-020",
 
 # ## Findings & next
 # 
-# - Expected: tuned LGBM edges tuned XGB; **family gain (vs LogReg, ~+0.011) ≫ tuning gain (~+0.001)**, both real by Wilcoxon; nested ≈ non-nested (tiny optimism → search width doesn't overfit).
+# - Found: tuned LGBM vs tuned XGB is a **tie** (p=1.000, 5/10 folds each way) — LGBM picked on speed at equal score; **family gain (+0.0103) ≈ 29× tuning gain (+0.000356)**, both real by Wilcoxon; nested CV reproduces the tuned score exactly (same config re-selected in all 10 outer folds → zero selection optimism).
 # 
 # **Section 9 — Error analysis & XAI:** the 3 consistently-misclassified people + SHAP (global bar + local waterfalls) on the final model.
 
@@ -1192,8 +1192,9 @@ for name, idx in cases.items():
     plt.show()
 
 
-# ## Findings & next
-# 
-# - Expected: errors concentrate at the **GENHLTH 3/4 boundary** (Good vs Fair is a subjective one-step difference, not model failure); top SHAP features should echo Section 7's gain ranking (PHYSHLTH, DIFFWALK, diabetes, BMI).
-# 
-# **Section 10 — assembly:** code.py export, report numbers, PDF, defense pass.
+# ## Wrap-up
+#
+# - Errors concentrate at the **GENHLTH 3/4 boundary** (Good vs Fair is a subjective one-step difference, not model failure); top SHAP features echo Section 7's gain ranking (PHYSHLTH, DIFFWALK, diabetes, BMI).
+print('\nDONE - sections 1-9 complete.')
+print(f'figures -> {os.path.abspath(FIG_DIR)}')
+print(f'experiment log -> {os.path.abspath(EXP_PATH)}')

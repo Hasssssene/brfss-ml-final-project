@@ -1,0 +1,36 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\setkeys{Gin}{width=0.88\linewidth,height=0.68\textheight,keepaspectratio}
+\usepackage{longtable,booktabs,array,etoolbox,calc}
+\usepackage{enumitem}
+\setlist{topsep=3pt,itemsep=2pt,parsep=0pt}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\setlength{\emergencystretch}{3em}
+\setlength{\parskip}{5pt plus 2pt}
+\widowpenalty=10000
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+\providecommand{\pandocbounded}[1]{#1}
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries $title$}\par\vspace{0.8em}
+{\small\itshape $subtitle$}\par\vspace{1.0em}
+{\normalsize $author$}\par\vspace{0.3em}
+{\small $course$}\par\vspace{0.8em}
+{\small\itshape $date$}\par
+\end{center}
+\vspace{0.6em}
+
+{\small $abstract$\par}
+\vspace{1.2em}
+\hrule
+\vspace{1.2em}
+
+\tableofcontents
+\newpage
+$body$
+\end{document}

@@ -459,6 +459,14 @@ The ranking echoes the gain importances of Section 8: `PHYSHLTH` first by a fact
 
 *Figure 8C: Local SHAP explanation for Case C (row 21595): age and difficulty walking push up, clean health-days and BMI push down, and the credits nearly cancel — the waterfall picture of a 0.5000 (notebook §9).*
 
+### 10.5 How calibrated are the scores?
+
+ROC-AUC validates *ranking*; deployment at a fixed threshold would additionally need calibrated probabilities. As a measured check, Figure 9 compares the OOF scores with reality: the reliability curve (10 quantile bins) runs close to the diagonal across the whole range — predicted 0.041 → observed 0.039, 0.198 → 0.207, 0.778 → 0.775 — with a **Brier score of 0.081** and an **expected calibration error of 0.005**; the mean predicted positive rate (0.1661) matches the actual one (0.1663). LightGBM's logistic training objective already yields near-calibrated scores at this data scale, so the calibration limitation stated in §11.1 is about *formal* guarantees, not a measured mismatch; a Platt/isotonic layer (§11.2) would still be the first deployment step.
+
+![Calibration](../../figures/fig09_calibration.png)
+
+*Figure 9: Reliability of the OOF scores — predicted vs observed P(Fair/Poor) in 10 quantile bins, 437,532 respondents.*
+
 ---
 
 ## 11. Conclusions
@@ -478,18 +486,19 @@ The ranking echoes the gain importances of Section 8: `PHYSHLTH` first by a fact
 
 ### 11.1 Known limitations
 
-- **`FLSHTMY3` sentinel wart.** The 777777 (*don't know*) sentinel on the month-of-last-flu-shot column was kept as its own one-hot category instead of being recoded to NaN (§3.3 recoded only its 999999 sentinel). It affects ~16.6k rows, is at most a noise-level effect, and leaks nothing (it is an input category, not target-derived) — but it is inconsistent with our per-column sentinel discipline and would be the first preprocessing fix in a future iteration. A deadline trade-off, documented rather than rushed.
+- **`FLSHTMY3` sentinel wart.** The 777777 (*don't know*) sentinel on the month-of-last-flu-shot column was kept as its own one-hot category instead of being recoded to NaN (§3.3 recoded only its 999999 sentinel). It affects ~16.6k rows, is at most a noise-level effect, and leaks nothing (it is an input category, not target-derived) — but it is inconsistent with our per-column sentinel discipline. A deadline trade-off, documented rather than rushed — and now settled empirically: a post-hoc isolation test (EXP-023) recoded the sentinel properly and re-ran the tuned model on the same folds, moving mean AUC by **−0.000001** (0.903671 vs 0.903672). Noise level, as assessed; the fix is verified and belongs in the next retrain, not in a rush today.
 - **Canonical log.** The canonical experiment log for this project is `ml_fp2/experiments.csv` (22 rows, EXP-001..022); every model number in this report cites it.
 - **Self-reported target.** The outcome is a subjective rating; with 88.1% of errors on the 3/4 boundary (§10.1), the achievable AUC has a ceiling set by the label, and our 0.9037 should be read against it.
-- **Ranking only, no calibration.** The metric is ROC-AUC; the OOF scores are not calibrated probabilities, and any fixed-threshold deployment would need a calibration analysis first (§11.2).
-- **Demographic associations.** SHAP shows `SEXVAR` and `_RACE` contributing (mean |SHAP| 0.1279 / 0.1401, §10.3). A deployed screener would inherit these associations; fairness review would be mandatory before any real-world use.
+- **Ranking validated; calibration measured informally.** The metric is ROC-AUC; the OOF scores carry no formal calibration, though the measured reliability is close to diagonal (Brier 0.081, ECE 0.005, §10.5). Any fixed-threshold deployment should still add a Platt/isotonic layer first (§11.2).
+- **Demographic associations — measured, not assumed.** SHAP shows `SEXVAR` and `_RACE` contributing (mean |SHAP| 0.1279 / 0.1401, §10.3), and OOF ranking quality is not uniform across groups: AUC 0.9123 for White respondents versus 0.8764 Hispanic, 0.8707 Black, 0.8475 Asian (0.8373–0.8901 across the smaller groups); by sex 0.8953 male versus 0.9101 female. A screener deployed on all groups would inherit this disparity — group-aware fairness evaluation is a measured requirement, not a formality.
 - **Selection bounded by the whitelist.** Feature selection operated inside the 76-column whitelist; a triage error that dropped a useful column cannot be recovered downstream (§3.2).
 
 ### 11.2 What we would do next
 
-1. **Fix `FLSHTMY3` properly** — per-column handling of the 777777 sentinel (recode to NaN → its own `_nan` one-hot level, consistent with the other 56 recoded columns).
-2. **Calibrate the scores** (Platt/isotonic on the OOF predictions) if the model is ever used for fixed-threshold screening rather than ranking.
-3. **Return to the original 5-class problem.** The binary result — and the fact that errors cluster on one adjacent-class boundary — suggests an ordinal model could exploit the gradient that the binary collapse throws away.
+1. **Adopt the `FLSHTMY3` fix in the next retrain** — the isolation test (EXP-023, §11.1) verified the 777777→NaN recode is a −0.000001 effect: it changes nothing today and removes the one inconsistency in the sentinel discipline.
+2. **Add a formal calibration layer** (Platt/isotonic on the OOF predictions) before any fixed-threshold screening — the measured near-diagonal reliability (§10.5) makes this a guarantee step rather than a repair.
+3. **Investigate the subgroup gap.** The race-group AUC spread measured in §11.1 (0.912 White versus 0.837–0.891 for the smaller groups) calls for group-aware evaluation, and in deployment at minimum per-group thresholds and error reporting.
+4. **Return to the original 5-class problem.** The binary result — and the fact that errors cluster on one adjacent-class boundary — suggests an ordinal model could exploit the gradient that the binary collapse throws away.
 
 ---
 
@@ -517,6 +526,7 @@ Course policy requires an accurate statement of any assistance received, human o
 | 2026-11-08 | OpenCode agent (GLM model) | Filled report Sections 7-11 with the final verified numbers (EXP-014..EXP-022), the error-case profiles, the SHAP readings, and the statistical-test interpretations; refreshed Section 12 from the current assistance log | Student verifies each cited number against experiments.csv and the notebook before submission |
 | 2026-11-09 | OpenCode agent (GLM model) | Completion and verification pass: code.py cleaned (stale section-10 notes removed, path-robust docstring, closing summary, expectation notes replaced with actual findings) and re-run end-to-end — EXP-001..021 reproduced bit-identically (the run exceeded a 60-minute harness timeout during the nested-CV stage, whose EXP-022 was then re-executed standalone with identical fold scores); report numbers audit: every AUC-range literal traced to experiments.csv, and the Section 8/9 numbers (Wilcoxon table, OOF AUC, error taxonomy, case rows and probabilities, SHAP top-12) recomputed from the interim checkpoints by a standalone script — all matched; prose fixes applied (experiment-log semantics, Wilcoxon optimism caveat, nested-search budget note, RF imputation rationale, date refresh) | Student reviews the audit trail; corrections adopted verbatim into report.md |
 | 2026-11-09 | OpenCode agent (GLM model) | LaTeX report build ported from the v1 template (11pt Latin Modern article, TOC, auto-numbered sections, unbreakable small tables); screencast assets written from the verified v2 numbers (6-beat script, deck prompt, v2 cheat sheet with the v1-vs-v2 number traps) | Student rehearses from the v2 script and records the screencast from the deck it describes |
+| 2026-11-09 | OpenCode agent (GLM model) | Limitations addressed empirically rather than only documented: FLSHTMY3 wart fix tested in isolation (EXP-023: mean AUC 0.903671, delta -0.000001 vs EXP-020 — noise level, as assessed); calibration measured on the OOF predictions (Brier 0.081, ECE 0.005, near-diagonal reliability; new report section 10.5 + figure); OOF AUC measured by SEXVAR and _RACE subgroups (0.9123 White vs 0.8475-0.8764 for several minority groups — the fairness caveat quantified); report sections 10.5/11.1/11.2 updated; two analysis scripts added under analysis/ | Student reviews the measured findings and their wording before submission |
 
 
 ### 12.2 Statement of responsibility

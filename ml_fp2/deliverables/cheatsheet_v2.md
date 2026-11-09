@@ -27,7 +27,9 @@ confidently — you ran v1 end-to-end before rebuilding it yourself.
 | Case C | row 21595, p exactly **0.5000** — credits cancel | v1: row 208256, p 0.5000022 |
 | SHAP | PHYSHLTH **0.7361** ≈ 4× #2 (DIABETE4 0.1947) | v1: 0.681, 3.1× |
 | Headline stat | family gain (+0.0103) = **29×** tuning gain (+0.000356) | v1: 10× |
-| Wart | FLSHTMY3 777777 kept as category — documented, first fix | (v2-only honesty point) |
+| Wart | FLSHTMY3 777777 kept as category — **tested: Δ −0.000001** (EXP-023), noise as assessed | v1: untested |
+| Calibration | **Brier 0.081, ECE 0.005**, near-diagonal (§10.5) | v1: never measured |
+| Fairness | OOF AUC **0.9123 White** vs 0.8764 Hisp / 0.8707 Black / 0.8475 Asian; sex 0.895 m / 0.910 f | v1: never measured |
 | Determinism | 3 re-runs → bit-identical folds; log refreshes rows in place | v1: fold-hash assert |
 
 ## Recording flow
@@ -35,3 +37,8 @@ confidently — you ran v1 end-to-end before rebuilding it yourself.
 2. Deck: Gamma prompt at `deliverables/gamma_deck_prompt.md`; drop real figures into slides 1/5/7.
 3. Dry run once, out loud, timed. Then record (PowerPoint Record or OBS).
 4. First sentence states the language.
+
+## Extra ammo for Q&A (measured this revision)
+- Calibration: Brier 0.081, ECE 0.005, near-diagonal — §10.5.
+- Subgroup AUC: white 0.912 · hispanic 0.876 · black 0.871 · asian 0.848; sex 0.895 m / 0.910 f — §11.1.
+- Wart fix tested: Δ −0.000001 (EXP-023) — noise, as assessed.
